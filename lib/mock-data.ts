@@ -23,6 +23,8 @@ export const menuItems: MenuItem[] = [
   { label: "Bancos", icon: "Landmark", href: "/bancos" },
   { label: "Compras", icon: "ShoppingCart", href: "/compras" },
   { label: "Mensagens", icon: "Mail", href: "/mensagens" },
+  { label: "Pendências", icon: "CalendarDays", href: "/pendencias" },
+  { label: "Financeiro", icon: "WalletCards", href: "/financeiro" },
   { label: "Relatórios", icon: "FileBarChart", href: "/relatorios" },
   { label: "Importar Planilha", icon: "Download", href: "/importar-planilha" },
   { label: "Configurações", icon: "Settings", href: "/configuracoes" },
@@ -52,12 +54,12 @@ export const performanceData: PerformancePoint[] = [
 ];
 
 export const topSellers: Seller[] = [
-  { position: 1, name: "Pedro Almeida", avatar: "https://i.pravatar.cc/96?img=13", proposals: 68, sales: 24, value: "R$ 482.000", growth: "+18%", conversion: "35,3%", role: "Consultor Sênior", hierarchy: "Comercial · Nível 3", email: "pedro.almeida@mvcrm.com.br", phone: "(11) 98811-3400", joined: "12/03/2024" },
-  { position: 2, name: "Juliana Souza", avatar: "https://i.pravatar.cc/96?img=47", proposals: 55, sales: 19, value: "R$ 356.000", growth: "+14%", conversion: "34,5%", role: "Supervisora Comercial", hierarchy: "Liderança · Nível 4", email: "juliana.souza@mvcrm.com.br", phone: "(11) 97721-2202", joined: "18/08/2023" },
-  { position: 3, name: "Marcos Lima", avatar: "https://i.pravatar.cc/96?img=51", proposals: 48, sales: 16, value: "R$ 301.500", growth: "+12%", conversion: "33,3%", role: "Consultor Pleno", hierarchy: "Comercial · Nível 2", email: "marcos.lima@mvcrm.com.br", phone: "(11) 99102-8831", joined: "04/11/2024" },
-  { position: 4, name: "Renata Dias", avatar: "https://i.pravatar.cc/96?img=32", proposals: 42, sales: 14, value: "R$ 265.000", growth: "+9%", conversion: "33,3%", role: "Consultora Pleno", hierarchy: "Comercial · Nível 2", email: "renata.dias@mvcrm.com.br", phone: "(11) 98541-7130", joined: "20/01/2025" },
-  { position: 5, name: "Felipe Rocha", avatar: "https://i.pravatar.cc/96?img=14", proposals: 38, sales: 12, value: "R$ 224.000", growth: "+7%", conversion: "31,6%", role: "Consultor Júnior", hierarchy: "Comercial · Nível 1", email: "felipe.rocha@mvcrm.com.br", phone: "(11) 97610-4455", joined: "15/04/2025" },
-  { position: 6, name: "Camila Nunes", avatar: "https://i.pravatar.cc/96?img=44", proposals: 32, sales: 10, value: "R$ 198.000", growth: "+6%", conversion: "31,2%", role: "Consultora Júnior", hierarchy: "Comercial · Nível 1", email: "camila.nunes@mvcrm.com.br", phone: "(11) 96744-1120", joined: "02/06/2025" },
+  { position: 1, name: "Pedro Almeida", avatar: "https://i.pravatar.cc/96?img=13", proposals: 68, sales: 24, value: "R$ 482.000", growth: "+18%", conversion: "35,3%", role: "Consultor Sênior", hierarchy: "Comercial · Nível 3", email: "pedro.almeida@mvcrm.com.br", phone: "(11) 98811-3400", joined: "12/03/2024", payDay: "05/10/2026", salary: 5200, paymentStatus: "Pendente" },
+  { position: 2, name: "Juliana Souza", avatar: "https://i.pravatar.cc/96?img=47", proposals: 55, sales: 19, value: "R$ 356.000", growth: "+14%", conversion: "34,5%", role: "Supervisora Comercial", hierarchy: "Liderança · Nível 4", email: "juliana.souza@mvcrm.com.br", phone: "(11) 97721-2202", joined: "18/08/2023", payDay: "05/10/2026", salary: 6800, paymentStatus: "Pendente" },
+  { position: 3, name: "Marcos Lima", avatar: "https://i.pravatar.cc/96?img=51", proposals: 48, sales: 16, value: "R$ 301.500", growth: "+12%", conversion: "33,3%", role: "Consultor Pleno", hierarchy: "Comercial · Nível 2", email: "marcos.lima@mvcrm.com.br", phone: "(11) 99102-8831", joined: "04/11/2024", payDay: "05/10/2026", salary: 4600, paymentStatus: "Pendente" },
+  { position: 4, name: "Renata Dias", avatar: "https://i.pravatar.cc/96?img=32", proposals: 42, sales: 14, value: "R$ 265.000", growth: "+9%", conversion: "33,3%", role: "Consultora Pleno", hierarchy: "Comercial · Nível 2", email: "renata.dias@mvcrm.com.br", phone: "(11) 98541-7130", joined: "20/01/2025", payDay: "05/10/2026", salary: 4600, paymentStatus: "Pendente" },
+  { position: 5, name: "Felipe Rocha", avatar: "https://i.pravatar.cc/96?img=14", proposals: 38, sales: 12, value: "R$ 224.000", growth: "+7%", conversion: "31,6%", role: "Consultor Júnior", hierarchy: "Comercial · Nível 1", email: "felipe.rocha@mvcrm.com.br", phone: "(11) 97610-4455", joined: "15/04/2025", payDay: "05/10/2026", salary: 3600, paymentStatus: "Pendente" },
+  { position: 6, name: "Camila Nunes", avatar: "https://i.pravatar.cc/96?img=44", proposals: 32, sales: 10, value: "R$ 198.000", growth: "+6%", conversion: "31,2%", role: "Consultora Júnior", hierarchy: "Comercial · Nível 1", email: "camila.nunes@mvcrm.com.br", phone: "(11) 96744-1120", joined: "02/06/2025", payDay: "05/10/2026", salary: 3600, paymentStatus: "Pendente" },
 ];
 
 export const banks: BankData[] = [
