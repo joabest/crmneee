@@ -94,7 +94,7 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <img src="/daniel-vorcaro.png" alt="Daniel Vorcaro" className="w-10 h-10 rounded-full object-cover object-top border border-gray-200" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Daniel_Vorcaro_-_2024_%28cropped%29.jpg" alt="Daniel Vorcaro" className="w-10 h-10 rounded-full object-cover object-top border border-gray-200" />
           <div className="leading-tight hidden md:block">
             <p className="text-sm font-semibold text-ink">Daniel Vorcaro</p>
             <p className="text-xs text-gray-500">Administrador • MV CRM</p>
