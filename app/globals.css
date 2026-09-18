@@ -91,6 +91,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
     @apply block text-[11px] text-gray-400 mt-0.5;
   }
 
+  .icon-btn {
+    @apply inline-flex w-7 h-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-ink transition-colors;
+  }
+
   .pill {
     @apply inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2.5 py-1 text-xs font-medium whitespace-nowrap;
   }
