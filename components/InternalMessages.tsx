@@ -3,6 +3,7 @@
 import { messages as initialMessages } from "@/lib/mock-data";
 import { Search, Plus, Mail, Users, X, Send } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function InternalMessages() {
   const [query, setQuery] = useState("");
@@ -11,12 +12,13 @@ export default function InternalMessages() {
   const [recipient, setRecipient] = useState("Juliana Souza");
   const [body, setBody] = useState("");
   const [sent, setSent] = useState(false);
+  const router = useRouter();
 
   const filtered = useMemo(() => messages.filter((m) => m.name.toLowerCase().includes(query.toLowerCase())), [messages, query]);
 
   const send = () => {
     if (!body.trim()) return;
-    setMessages((old) => [{ id: "new-" + Date.now(), name: recipient, avatar: "", time: "Agora", preview: body }, ...old]);
+    setMessages((old) => [{ id: "new-" + Date.now(), name: recipient, avatar: "", time: "Agora", preview: body, body, role:"Equipe Comercial", hierarchy:"Mensagem enviada pelo administrador" }, ...old]);
     setBody(""); setCompose(false); setSent(true);
     setTimeout(() => setSent(false), 2200);
   };
@@ -39,23 +41,24 @@ export default function InternalMessages() {
 
         <div className="flex-1 space-y-1 overflow-y-auto max-h-[255px]">
           {filtered.map((m) => (
-            <button key={m.id} onClick={()=>alert(`${m.name}: ${m.preview}`)} className="w-full flex items-start gap-3 py-2 px-1 rounded-lg hover:bg-gray-50 text-left">
+            <button key={m.id} onClick={()=>router.push(`/mensagens?thread=${encodeURIComponent(m.id)}`)} className="w-full flex items-start gap-3 py-2 px-1 rounded-lg hover:bg-gray-50 text-left">
               {m.isGroup ? (
                 <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0"><Users size={16} className="text-gray-500" /></div>
               ) : m.avatar ? (
-                <img src={m.avatar} alt={m.name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                <img src={m.avatar} alt={m.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-semibold shrink-0">{m.name.slice(0,2).toUpperCase()}</div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between"><p className="text-sm font-semibold text-ink truncate">{m.name}</p><span className="text-[11px] text-gray-400 shrink-0 ml-2">{m.time}</span></div>
-                <div className="flex items-center justify-between"><p className="text-xs text-gray-500 truncate">{m.preview}</p>{m.unread && <span className="ml-2 shrink-0 w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-semibold">{m.unread}</span>}</div>
+                <p className="text-[11px] text-gray-400 truncate mt-0.5">{m.role} · {m.hierarchy}</p>
+                <div className="flex items-center justify-between mt-0.5"><p className="text-xs text-gray-500 truncate">{m.preview}</p>{m.unread && <span className="ml-2 shrink-0 w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-semibold">{m.unread}</span>}</div>
               </div>
             </button>
           ))}
         </div>
 
-        <button onClick={()=>setCompose(true)} className="mt-3 w-full flex items-center justify-center gap-2 bg-ink hover:bg-black text-white text-sm font-medium py-2.5 rounded-lg transition-colors"><Mail size={15}/>Nova Mensagem</button>
+        <button onClick={()=>router.push("/mensagens")} className="mt-3 w-full flex items-center justify-center gap-2 bg-ink hover:bg-black text-white text-sm font-medium py-2.5 rounded-lg transition-colors"><Mail size={15}/>Abrir Mensagens</button>
       </div>
 
       {sent && <div className="fixed bottom-5 right-5 z-[80] bg-ink text-white px-4 py-3 rounded-xl shadow-xl text-sm">Mensagem enviada no modo demonstrativo.</div>}
