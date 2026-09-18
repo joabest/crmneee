@@ -297,9 +297,132 @@ function QuotasPage(){
 }
 
 function ServicePage(){
-  const [tickets,setTickets]=useState<ServiceTicket[]>(serviceTickets); const stages:ServiceTicket["stage"][]=["Não contatado","Em negociação","Vendido","Recusou"];
-  const move=(id:string,stage:ServiceTicket["stage"])=>setTickets((old)=>old.map((t)=>t.id===id?{...t,stage}:t));
-  return <><PageHeader title="Atendimentos" subtitle="Funil visual para impedir contato duplicado e acompanhar cada lead."/><div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">{stages.map((stage)=><div key={stage} className="bg-gray-100/70 border border-gray-200 rounded-2xl p-3 min-h-[420px]"><div className="flex items-center justify-between px-1 mb-3"><h3 className="font-semibold text-sm">{stage}</h3><span className="text-xs bg-white border border-gray-200 rounded-full px-2 py-1">{tickets.filter((t)=>t.stage===stage).length}</span></div><div className="space-y-3">{tickets.filter((t)=>t.stage===stage).map((t)=><div key={t.id} className="bg-white rounded-xl border border-gray-100 shadow-card p-4"><div className="flex justify-between gap-2"><div><p className="font-semibold text-sm">{t.client}</p><p className="text-xs text-gray-400 mt-0.5">{t.id} · {t.owner}</p></div><a href={`tel:${t.phone.replace(/\D/g,"")}`}><Phone size={15} className="text-gray-400"/></a></div><p className="text-xs text-gray-500 mt-3">{t.note}</p><p className="text-xs mt-2">{t.phone}</p><select value={t.stage} onChange={(e)=>move(t.id,e.target.value as ServiceTicket["stage"])} className="field w-full mt-3 text-xs">{stages.map((s)=><option key={s}>{s}</option>)}</select></div>)}</div></div>)}</div></>;
+  const [tickets,setTickets]=useState<ServiceTicket[]>(serviceTickets);
+  const [query,setQuery]=useState("");
+  const [owner,setOwner]=useState("Todos");
+  const [stage,setStage]=useState("Todos");
+  const [sortKey,setSortKey]=useState<"client"|"owner"|"stage"|"id">("client");
+  const [sortDir,setSortDir]=useState<"asc"|"desc">("asc");
+  const [selected,setSelected]=useState<ServiceTicket|null>(null);
+  const stages:ServiceTicket["stage"][]=["Não contatado","Em negociação","Vendido","Recusou"];
+  const owners=Array.from(new Set(tickets.map((t)=>t.owner))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+
+  const meta:Record<string,{last:string;channel:string;count:number}> = {
+    "AT-110":{last:"18/09/2026 08:42",channel:"Sistema",count:1},
+    "AT-109":{last:"18/09/2026 08:25",channel:"Ligação",count:3},
+    "AT-108":{last:"18/09/2026 10:18",channel:"WhatsApp",count:8},
+    "AT-107":{last:"18/09/2026 09:54",channel:"WhatsApp",count:6},
+    "AT-106":{last:"17/09/2026 17:32",channel:"E-mail",count:12},
+    "AT-105":{last:"17/09/2026 15:10",channel:"Ligação",count:5},
+    "AT-104":{last:"18/09/2026 11:06",channel:"WhatsApp",count:7},
+    "AT-103":{last:"18/09/2026 07:58",channel:"Sistema",count:1},
+    "AT-102":{last:"16/09/2026 16:42",channel:"E-mail",count:14},
+    "AT-101":{last:"18/09/2026 09:12",channel:"Ligação",count:4},
+    "AT-100":{last:"18/09/2026 12:03",channel:"WhatsApp",count:9},
+    "AT-099":{last:"17/09/2026 18:01",channel:"WhatsApp",count:15},
+  };
+
+  const filtered=useMemo(()=>{
+    const q=query.trim().toLowerCase();
+    const out=tickets.filter((t)=>
+      (!q||[t.client,t.owner,t.phone,t.id,t.note].join(" ").toLowerCase().includes(q)) &&
+      (owner==="Todos"||t.owner===owner) &&
+      (stage==="Todos"||t.stage===stage)
+    );
+    return out.slice().sort((a,b)=>{
+      const av=String(a[sortKey]).toLowerCase();
+      const bv=String(b[sortKey]).toLowerCase();
+      const cmp=av.localeCompare(bv,"pt-BR",{numeric:true,sensitivity:"base"});
+      return sortDir==="asc"?cmp:-cmp;
+    });
+  },[tickets,query,owner,stage,sortKey,sortDir]);
+
+  const sort=(key:"client"|"owner"|"stage"|"id")=>{
+    if(sortKey===key)setSortDir((d)=>d==="asc"?"desc":"asc");
+    else{setSortKey(key);setSortDir("asc")}
+  };
+  const move=(id:string,next:ServiceTicket["stage"])=>{
+    setTickets((old)=>old.map((t)=>t.id===id?{...t,stage:next}:t));
+    setSelected((old)=>old?.id===id?{...old,stage:next}:old);
+  };
+  const phoneDigits=(p:string)=>p.replace(/\D/g,"");
+
+  const history=(t:ServiceTicket)=>{
+    const common=[
+      {time:"08:42",date:"18/09/2026",channel:"Sistema",from:"MV CRM",text:`Atendimento ${t.id} atribuído a ${t.owner}.`},
+      {time:"09:05",date:"18/09/2026",channel:"Ligação",from:t.owner,text:`Tentativa de contato com ${t.client}. Registro do atendimento atualizado.`},
+    ];
+    if(t.stage==="Não contatado") return [...common,{time:"09:12",date:"18/09/2026",channel:"Ligação",from:t.owner,text:"Cliente não atendeu. Nova tentativa programada."}];
+    if(t.stage==="Em negociação") return [...common,{time:"09:18",date:"18/09/2026",channel:"WhatsApp",from:t.client,text:"Olá, pode me mandar a simulação com as opções de prazo?"},{time:"09:21",date:"18/09/2026",channel:"WhatsApp",from:t.owner,text:"Claro. Vou separar as opções e retorno com os valores."},{time:"10:02",date:"18/09/2026",channel:"Observação",from:t.owner,text:t.note}];
+    if(t.stage==="Vendido") return [...common,{time:"11:15",date:"17/09/2026",channel:"WhatsApp",from:t.client,text:"Pode seguir com essa condição."},{time:"11:22",date:"17/09/2026",channel:"E-mail",from:t.owner,text:"Documentação e condições enviadas para confirmação."},{time:"17:32",date:"17/09/2026",channel:"Sistema",from:"MV CRM",text:"Venda registrada e atendimento marcado como concluído."}];
+    return [...common,{time:"14:55",date:"17/09/2026",channel:"Ligação",from:t.client,text:"No momento não vou seguir com a proposta."},{time:"15:10",date:"17/09/2026",channel:"Observação",from:t.owner,text:t.note}];
+  };
+
+  const th=(key:"client"|"owner"|"stage"|"id",label:string)=><th><button onClick={()=>sort(key)} className="inline-flex items-center gap-1 hover:text-gray-700">{label}<SortIcon active={sortKey===key} dir={sortDir}/></button></th>;
+
+  return <>
+    <PageHeader title="Atendimentos" subtitle="Visão administrativa de todos os atendimentos, enfileirados por cliente, com filtros e histórico completo."/>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stages.map((s)=><div key={s} className="panel"><p className="text-xs text-gray-400">{s}</p><p className="text-2xl font-bold mt-2">{tickets.filter((t)=>t.stage===s).length}</p></div>)}
+    </div>
+
+    <div className="panel">
+      <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-4">
+        <div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar cliente, telefone, responsável ou atendimento..."/></div>
+        <select className="field" value={owner} onChange={(e)=>setOwner(e.target.value)}><option>Todos</option>{owners.map((x)=><option key={x}>{x}</option>)}</select>
+        <select className="field" value={stage} onChange={(e)=>setStage(e.target.value)}><option>Todos</option>{stages.map((x)=><option key={x}>{x}</option>)}</select>
+        <button onClick={()=>{setQuery("");setOwner("Todos");setStage("Todos")}} className="btn-secondary justify-center">Limpar filtros</button>
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-400">{filtered.length} atendimento(s) na fila</p>
+        <span className="text-xs text-gray-400">Administrador · visão completa</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="data-table min-w-[1050px]">
+          <thead><tr>{th("id","Atendimento")}{th("client","Cliente")}<th>Contato</th>{th("owner","Responsável")}{th("stage","Status")}<th>Última interação</th><th>Canal</th><th>Mensagens</th><th>Ações</th></tr></thead>
+          <tbody>{filtered.map((t)=><tr key={t.id} onClick={()=>setSelected(t)} className="cursor-pointer">
+            <td><b>{t.id}</b></td>
+            <td><button onClick={(e)=>{e.stopPropagation();setSelected(t)}} className="text-left hover:underline underline-offset-4"><b>{t.client}</b><small>{t.note}</small></button></td>
+            <td><div className="flex items-center gap-2"><span>{t.phone}</span><a onClick={(e)=>e.stopPropagation()} href={`tel:${phoneDigits(t.phone)}`} className="icon-btn"><Phone size={14}/></a><a onClick={(e)=>e.stopPropagation()} href={`https://wa.me/55${phoneDigits(t.phone)}`} target="_blank" rel="noreferrer" className="icon-btn text-green-600"><MessageSquare size={14}/></a></div></td>
+            <td>{t.owner}</td>
+            <td><span className="pill">{t.stage}</span></td>
+            <td>{meta[t.id]?.last||"18/09/2026 09:00"}</td>
+            <td>{meta[t.id]?.channel||"Sistema"}</td>
+            <td><span className="inline-flex min-w-7 justify-center rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold">{meta[t.id]?.count||1}</span></td>
+            <td><button onClick={(e)=>{e.stopPropagation();setSelected(t)}} className="btn-secondary py-1.5 px-2.5">Visualizar</button></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+      {!filtered.length&&<div className="py-10 text-center text-sm text-gray-400">Nenhum atendimento encontrado.</div>}
+    </div>
+
+    {selected&&<Modal title={`Atendimento ${selected.id}`} onClose={()=>setSelected(null)}>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div><h3 className="text-xl font-bold">{selected.client}</h3><p className="text-sm text-gray-500 mt-1">{selected.phone} · responsável: {selected.owner}</p></div>
+        <select value={selected.stage} onChange={(e)=>move(selected.id,e.target.value as ServiceTicket["stage"])} className="field">{stages.map((s)=><option key={s}>{s}</option>)}</select>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+        <div className="metric"><b>{meta[selected.id]?.count||1}</b><span>Interações</span></div>
+        <div className="metric"><b>{meta[selected.id]?.channel||"Sistema"}</b><span>Último canal</span></div>
+        <div className="metric"><b>{selected.stage}</b><span>Status atual</span></div>
+        <div className="metric"><b>{selected.owner}</b><span>Responsável</span></div>
+      </div>
+
+      <div className="mt-5">
+        <h4 className="font-semibold text-sm mb-3">Histórico completo do atendimento</h4>
+        <div className="space-y-3">
+          {history(selected).map((item,i)=><div key={i} className="flex gap-3">
+            <div className="flex flex-col items-center"><span className="w-3 h-3 rounded-full bg-ink mt-1.5"/>{i<history(selected).length-1&&<span className="w-px flex-1 bg-gray-200 mt-1"/>}</div>
+            <div className="flex-1 pb-4"><div className="flex items-center gap-2 flex-wrap"><b className="text-sm">{item.channel}</b><span className="text-xs text-gray-400">{item.date} · {item.time}</span></div><p className="text-xs text-gray-500 mt-1">{item.from}</p><p className="text-sm text-gray-700 mt-2 leading-6">{item.text}</p></div>
+          </div>)}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mt-4"><a href={`tel:${phoneDigits(selected.phone)}`} className="btn-secondary justify-center"><Phone size={15}/>Ligar</a><a href={`https://wa.me/55${phoneDigits(selected.phone)}`} target="_blank" rel="noreferrer" className="btn-secondary justify-center"><MessageSquare size={15}/>WhatsApp</a></div>
+    </Modal>}
+  </>;
 }
 
 function SellersPage(){
@@ -307,12 +430,12 @@ function SellersPage(){
   const rows=topSellers.filter((s)=>s.name.toLowerCase().includes(query.toLowerCase())).slice().sort((a,b)=>sort==="Vendas"?b.sales-a.sales:sort==="Propostas"?b.proposals-a.proposals:parseFloat(b.conversion)-parseFloat(a.conversion));
   const history=selected?proposals.filter((p)=>p.seller===selected.name):[];
   const sellerPurchases=selected?purchases.filter((p)=>p.seller===selected.name):[];
-  const exportSeller=(s:Seller)=>downloadCsv(`vendedor-${s.name.toLowerCase().replace(/\s+/g,"-")}.csv`,[["Nome","Cargo","Hierarquia","E-mail","Telefone","Propostas","Vendas","Conversão","Valor vendido"],[s.name,s.role,s.hierarchy,s.email,s.phone,s.proposals,s.sales,s.conversion,s.value],[],["Propostas"],["Nº","Cliente","Banco","Crédito","Status"],...history.map((p)=>[p.id,p.client,p.bank,p.creditValue,p.status])]);
+  const exportSeller=(s:Seller)=>downloadCsv(`vendedor-${s.name.toLowerCase().replace(/\s+/g,"-")}.csv`,[["Nome","Cargo","Hierarquia","E-mail","Telefone","Data de pagamento","Salário","Status pagamento","Propostas","Vendas","Conversão","Valor vendido"],[s.name,s.role,s.hierarchy,s.email,s.phone,s.payDay,s.salary,s.paymentStatus,s.proposals,s.sales,s.conversion,s.value],[],["Propostas"],["Nº","Cliente","Banco","Crédito","Status"],...history.map((p)=>[p.id,p.client,p.bank,p.creditValue,p.status])]);
   return <>
     <PageHeader title="Vendedores" subtitle="Clique em um vendedor para ver dados completos, histórico e exportar."/>
     <div className="panel toolbar"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar vendedor..."/></div><select className="field w-full sm:w-auto" value={sort} onChange={(e)=>setSort(e.target.value)}><option>Vendas</option><option>Propostas</option><option>Conversão</option></select></div>
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{rows.map((s)=><button key={s.name} onClick={()=>setSelected(s)} className="panel text-left hover:border-gray-300 transition-colors"><div className="flex items-center gap-3"><img src={s.avatar} loading="lazy" className="w-12 h-12 rounded-full object-cover" alt={s.name}/><div className="min-w-0"><h3 className="font-semibold truncate">{s.name}</h3><p className="text-xs text-gray-400">{s.role}</p></div><span className="ml-auto text-xs text-positive font-semibold">{s.growth}</span></div><div className="grid grid-cols-3 gap-2 mt-5"><div className="metric"><b>{s.proposals}</b><span>Propostas</span></div><div className="metric"><b>{s.sales}</b><span>Vendas</span></div><div className="metric"><b>{s.conversion}</b><span>Conversão</span></div></div><p className="mt-4 text-sm"><span className="text-gray-400">Valor vendido</span><b className="float-right">{s.value}</b></p></button>)}</div>
-    {selected&&<Modal title={selected.name} onClose={()=>setSelected(null)}><div className="flex items-center gap-4 mb-5"><img src={selected.avatar} className="w-16 h-16 rounded-full object-cover" alt={selected.name}/><div><p className="font-semibold">{selected.role}</p><p className="text-sm text-gray-500">{selected.hierarchy}</p><p className="text-xs text-gray-400 mt-1">Na empresa desde {selected.joined}</p></div></div><div className="grid sm:grid-cols-2 gap-3 text-sm"><div className="panel p-3"><p className="text-xs text-gray-400">Telefone</p><b>{selected.phone}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">E-mail</p><b className="break-all">{selected.email}</b></div><div className="metric"><b>{selected.proposals}</b><span>Propostas</span></div><div className="metric"><b>{selected.sales}</b><span>Vendas</span></div></div><button onClick={()=>exportSeller(selected)} className="btn-secondary mt-4"><Download size={15}/>Exportar dados do vendedor</button><div className="mt-5"><h4 className="font-semibold text-sm mb-2">Histórico de propostas</h4>{history.slice(0,8).map((p)=><div key={p.id} className="flex justify-between gap-3 border-t border-gray-100 py-3 text-sm"><span>Nº {p.id} · {p.client}</span><span className="text-gray-500">{p.bank} · {p.creditValue}</span></div>)}{!history.length&&<p className="text-sm text-gray-400">Sem propostas simuladas.</p>}</div>{sellerPurchases.length>0&&<div className="mt-4"><h4 className="font-semibold text-sm mb-2">Compras concluídas / em andamento</h4>{sellerPurchases.map((p)=><div key={p.id} className="flex justify-between gap-3 border-t border-gray-100 py-3 text-sm"><span>{p.client} · {p.product}</span><b>{money(p.value)}</b></div>)}</div>}</Modal>}
+    {selected&&<Modal title={selected.name} onClose={()=>setSelected(null)}><div className="flex items-center gap-4 mb-5"><img src={selected.avatar} className="w-16 h-16 rounded-full object-cover" alt={selected.name}/><div><p className="font-semibold">{selected.role}</p><p className="text-sm text-gray-500">{selected.hierarchy}</p><p className="text-xs text-gray-400 mt-1">Na empresa desde {selected.joined}</p></div></div><div className="grid sm:grid-cols-2 gap-3 text-sm"><div className="panel p-3"><p className="text-xs text-gray-400">Telefone</p><b>{selected.phone}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">E-mail</p><b className="break-all">{selected.email}</b></div><div className="metric"><b>{selected.proposals}</b><span>Propostas</span></div><div className="metric"><b>{selected.sales}</b><span>Vendas</span></div><div className="panel p-3"><p className="text-xs text-gray-400">Próximo pagamento</p><b>{selected.payDay}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Salário simulado</p><b>{money(selected.salary)} · {selected.paymentStatus}</b></div></div><button onClick={()=>exportSeller(selected)} className="btn-secondary mt-4"><Download size={15}/>Exportar dados do vendedor</button><div className="mt-5"><h4 className="font-semibold text-sm mb-2">Histórico de propostas</h4>{history.slice(0,8).map((p)=><div key={p.id} className="flex justify-between gap-3 border-t border-gray-100 py-3 text-sm"><span>Nº {p.id} · {p.client}</span><span className="text-gray-500">{p.bank} · {p.creditValue}</span></div>)}{!history.length&&<p className="text-sm text-gray-400">Sem propostas simuladas.</p>}</div>{sellerPurchases.length>0&&<div className="mt-4"><h4 className="font-semibold text-sm mb-2">Compras concluídas / em andamento</h4>{sellerPurchases.map((p)=><div key={p.id} className="flex justify-between gap-3 border-t border-gray-100 py-3 text-sm"><span>{p.client} · {p.product}</span><b>{money(p.value)}</b></div>)}</div>}</Modal>}
   </>;
 }
 
