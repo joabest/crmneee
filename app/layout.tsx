@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AccessGate from "@/components/AccessGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-bg text-ink antialiased">{children}</body>
+      <body className="bg-bg text-ink antialiased">
+        <AccessGate>{children}</AccessGate>
+      </body>
     </html>
   );
 }
