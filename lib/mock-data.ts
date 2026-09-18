@@ -130,12 +130,18 @@ export const purchases: Purchase[] = [
 ];
 
 export const serviceTickets: ServiceTicket[] = [
-  { id: "AT-102", client: "Ana Costa", owner: "Renata Dias", phone: "(11) 98551-2102", stage: "Não contatado", note: "Lead recebido pelo site." },
-  { id: "AT-101", client: "Roberto Lima", owner: "Felipe Rocha", phone: "(11) 99182-3341", stage: "Não contatado", note: "Tentativa agendada para 14h." },
-  { id: "AT-100", client: "João da Silva", owner: "Pedro Almeida", phone: "(11) 98821-4421", stage: "Em negociação", note: "Aguardando documentos." },
-  { id: "AT-099", client: "Carlos Santos", owner: "Marcos Lima", phone: "(11) 99638-5502", stage: "Em negociação", note: "Cliente comparando bancos." },
-  { id: "AT-098", client: "Maria Oliveira", owner: "Juliana Souza", phone: "(11) 97742-1190", stage: "Vendido", note: "Venda concluída." },
-  { id: "AT-097", client: "Gustavo Martins", owner: "Juliana Souza", phone: "(11) 96345-8011", stage: "Recusou", note: "Sem interesse no momento." },
+  { id: "AT-110", client: "Ana Costa", owner: "Renata Dias", phone: "(11) 98551-2102", stage: "Não contatado", note: "Lead recebido pelo site. Aguardando primeira abordagem." },
+  { id: "AT-109", client: "Roberto Lima", owner: "Felipe Rocha", phone: "(11) 99182-3341", stage: "Não contatado", note: "Tentativa agendada para 14h." },
+  { id: "AT-108", client: "João da Silva", owner: "Pedro Almeida", phone: "(11) 98821-4421", stage: "Em negociação", note: "Aguardando documentos para proposta." },
+  { id: "AT-107", client: "Carlos Santos", owner: "Marcos Lima", phone: "(11) 99638-5502", stage: "Em negociação", note: "Cliente comparando condições entre bancos." },
+  { id: "AT-106", client: "Maria Oliveira", owner: "Juliana Souza", phone: "(11) 97742-1190", stage: "Vendido", note: "Venda concluída. Follow-up pós-venda agendado." },
+  { id: "AT-105", client: "Gustavo Martins", owner: "Juliana Souza", phone: "(11) 96345-8011", stage: "Recusou", note: "Sem interesse no momento. Recontato futuro permitido." },
+  { id: "AT-104", client: "Patrícia Souza", owner: "Marcos Lima", phone: "(11) 95624-1100", stage: "Em negociação", note: "Solicitou nova simulação com prazo maior." },
+  { id: "AT-103", client: "André Ribeiro", owner: "Camila Nunes", phone: "(11) 95224-7710", stage: "Não contatado", note: "Lead do Instagram aguardando contato." },
+  { id: "AT-102", client: "Luciana Mendes", owner: "Pedro Almeida", phone: "(11) 94711-2288", stage: "Vendido", note: "Cliente com venda concluída e documentos arquivados." },
+  { id: "AT-101", client: "Rafael Costa", owner: "Renata Dias", phone: "(11) 93880-1190", stage: "Não contatado", note: "Duas tentativas sem resposta." },
+  { id: "AT-100", client: "Bruna Alves", owner: "Felipe Rocha", phone: "(11) 92910-4420", stage: "Em negociação", note: "Cliente pediu retorno após as 18h." },
+  { id: "AT-099", client: "Fernanda Rocha", owner: "Pedro Almeida", phone: "(11) 97211-9022", stage: "Vendido", note: "Pagamento confirmado. Atendimento finalizado." },
 ];
 
 export const messages: Message[] = [
