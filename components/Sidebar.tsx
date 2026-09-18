@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import {
   LayoutGrid, User, FileText, Package, MessageSquare, Users, Landmark,
   ShoppingCart, FileBarChart, Download, Settings, HelpCircle, Headphones,
-  Mail, X
+  Mail, X, CalendarDays, WalletCards
 } from "lucide-react";
 import { menuItems } from "@/lib/mock-data";
 
 const iconMap: Record<string, React.ElementType> = {
   LayoutGrid, User, FileText, Package, MessageSquare, Users, Landmark,
-  ShoppingCart, FileBarChart, Download, Settings, HelpCircle, Mail,
+  ShoppingCart, FileBarChart, Download, Settings, HelpCircle, Mail, CalendarDays, WalletCards,
 };
 
 export default function Sidebar({
