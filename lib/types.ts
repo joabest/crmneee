@@ -27,6 +27,9 @@ export interface Seller {
   email: string;
   phone: string;
   joined: string;
+  payDay: string;
+  salary: number;
+  paymentStatus: "Pago" | "Pendente";
 }
 
 export interface Message {
