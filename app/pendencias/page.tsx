@@ -56,9 +56,13 @@ export default function PendenciasPage(){
       (priority==="Todas"||t.priority===priority);
   }),[tasks,query,owner,priority]);
 
-  const todayCount=tasks.filter((t)=>t.date==="2026-09-18"&&t.status!=="Concluído").length;
-  const overdue=tasks.filter((t)=>t.date<"2026-09-18"&&t.status!=="Concluído").length;
-  const urgent=tasks.filter((t)=>t.priority==="Alta"&&t.status!=="Concluído").length;
+  const hasActiveFilters=Boolean(query.trim())||owner!=="Todos"||priority!=="Todas";
+  const visibleStatuses=hasActiveFilters
+    ? statuses.filter((status)=>filtered.some((task)=>task.status===status))
+    : statuses;
+  const todayCount=filtered.filter((t)=>t.date==="2026-09-18"&&t.status!=="Concluído").length;
+  const overdue=filtered.filter((t)=>t.date<"2026-09-18"&&t.status!=="Concluído").length;
+  const urgent=filtered.filter((t)=>t.priority==="Alta"&&t.status!=="Concluído").length;
   const moveTask=(id:string,status:TaskStatus)=>setTasks((old)=>old.map((t)=>t.id===id?{...t,status}:t));
   const addTask=()=>{
     if(!form.title.trim()||!form.client.trim())return;
@@ -90,9 +94,9 @@ export default function PendenciasPage(){
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="panel"><p className="text-xs text-gray-400">Pendências de hoje</p><p className="text-3xl font-bold mt-2">{todayCount}</p><p className="text-xs text-gray-500 mt-2">Ainda abertas em 18/09</p></div>
-        <div className="panel"><p className="text-xs text-gray-400">Atrasadas</p><p className="text-3xl font-bold mt-2">{overdue}</p><p className="text-xs text-gray-500 mt-2">Precisam de revisão</p></div>
-        <div className="panel"><p className="text-xs text-gray-400">Alta prioridade</p><p className="text-3xl font-bold mt-2">{urgent}</p><p className="text-xs text-gray-500 mt-2">Em todo o fluxo</p></div>
+        <div className="panel"><p className="text-xs text-gray-400">Pendências de hoje</p><p className="text-3xl font-bold mt-2">{todayCount}</p><p className="text-xs text-gray-500 mt-2">{hasActiveFilters?"Dentro do filtro atual":"Ainda abertas em 18/09"}</p></div>
+        <div className="panel"><p className="text-xs text-gray-400">Atrasadas</p><p className="text-3xl font-bold mt-2">{overdue}</p><p className="text-xs text-gray-500 mt-2">{hasActiveFilters?"Dentro do filtro atual":"Precisam de revisão"}</p></div>
+        <div className="panel"><p className="text-xs text-gray-400">Alta prioridade</p><p className="text-3xl font-bold mt-2">{urgent}</p><p className="text-xs text-gray-500 mt-2">{hasActiveFilters?"Dentro do filtro atual":"Em todo o fluxo"}</p></div>
       </div>
 
       <div className="panel">
@@ -108,8 +112,14 @@ export default function PendenciasPage(){
       </div>
 
       {view==="kanban" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
-          {statuses.map((status)=><section key={status} className="bg-gray-100/70 border border-gray-200 rounded-2xl p-3 min-h-[460px]">
+        <>
+          {hasActiveFilters&&<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+            <span><b>{filtered.length}</b> resultado(s) correspondente(s) ao filtro atual.</span>
+            <button onClick={()=>{setQuery("");setOwner("Todos");setPriority("Todas")}} className="text-xs font-semibold underline underline-offset-4">Limpar filtros</button>
+          </div>}
+          {filtered.length ? (
+            <div className={`grid grid-cols-1 gap-4 ${visibleStatuses.length===1?"max-w-xl":visibleStatuses.length===2?"md:grid-cols-2":visibleStatuses.length===3?"md:grid-cols-2 xl:grid-cols-3":"md:grid-cols-2 2xl:grid-cols-4"}`}>
+          {visibleStatuses.map((status)=><section key={status} className="bg-gray-100/70 border border-gray-200 rounded-2xl p-3 min-h-[460px]">
             <div className="flex items-center justify-between px-1 mb-3"><h2 className="font-semibold text-sm">{status}</h2><span className="text-xs rounded-full bg-white border border-gray-200 px-2 py-1">{filtered.filter((t)=>t.status===status).length}</span></div>
             <div className="space-y-3">
               {filtered.filter((t)=>t.status===status).map((task)=><article key={task.id} className="bg-white rounded-xl border border-gray-100 shadow-card p-4">
@@ -121,7 +131,15 @@ export default function PendenciasPage(){
               </article>)}
             </div>
           </section>)}
-        </div>
+            </div>
+          ) : (
+            <div className="panel py-16 text-center">
+              <p className="font-semibold text-ink">Nenhuma pendência encontrada</p>
+              <p className="mt-1 text-sm text-gray-400">Não existe registro correspondente aos filtros selecionados.</p>
+              <button onClick={()=>{setQuery("");setOwner("Todos");setPriority("Todas")}} className="btn-secondary mt-4">Limpar filtros</button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
           <section className="panel">
