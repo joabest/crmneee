@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import KpiCard from "@/components/KpiCard";
 import PerformanceChart from "@/components/PerformanceChart";
@@ -9,7 +10,7 @@ import InternalMessages from "@/components/InternalMessages";
 import ProposalsTable from "@/components/ProposalsTable";
 import { kpis as baseKpis, performanceData as basePerformance, proposals } from "@/lib/mock-data";
 import type { KpiData, PerformancePoint } from "@/lib/types";
-import { Download } from "lucide-react";
+import { ArrowRight, CalendarClock, Download, WalletCards } from "lucide-react";
 
 type Period = 1 | 7 | 14 | 30;
 
@@ -21,11 +22,13 @@ const DEMO_TODAY = proposals.reduce(
 const brl = (value:number) =>
   value.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
 
-const integer = (min:number,max:number) =>
-  Math.round(min + Math.random() * (max - min));
-
-const decimal = (min:number,max:number) =>
-  min + Math.random() * (max - min);
+function seeded(seed:number){
+  let state=(seed>>>0)||1;
+  return ()=>{
+    state=(state*1664525+1013904223)>>>0;
+    return state/4294967296;
+  };
+}
 
 function startDateFromPeriod(period:Period){
   const [y,m,d]=DEMO_TODAY.split("-").map(Number);
@@ -34,7 +37,11 @@ function startDateFromPeriod(period:Period){
   return date.toISOString().slice(0,10);
 }
 
-function buildChart(period:Period):PerformancePoint[]{
+function buildChart(period:Period,seedValue:number):PerformancePoint[]{
+  const random=seeded(seedValue+period*7919);
+  const integer=(min:number,max:number)=>Math.round(min+random()*(max-min));
+  const decimal=(min:number,max:number)=>min+random()*(max-min);
+
   if(period===1){
     return ["08h","10h","12h","14h","16h","18h","20h","22h"].map((label,index)=>{
       const propostas=integer(18000,62000)+index*integer(500,2400);
@@ -55,7 +62,10 @@ function buildChart(period:Period):PerformancePoint[]{
   });
 }
 
-function buildKpis(period:Period):KpiData[]{
+function buildKpis(period:Period,seedValue:number):KpiData[]{
+  const random=seeded(seedValue+period*3571);
+  const integer=(min:number,max:number)=>Math.round(min+random()*(max-min));
+  const decimal=(min:number,max:number)=>min+random()*(max-min);
   const factor=Math.pow(period,0.78);
   const proposalValue=Math.round(integer(185000,390000)*factor);
   const clients=integer(2380,3260);
@@ -73,26 +83,24 @@ function buildKpis(period:Period):KpiData[]{
 
 export default function DashboardPage() {
   const [period,setPeriod]=useState<Period>(7);
+  const [seed,setSeed]=useState(0);
   const [dashboardKpis,setDashboardKpis]=useState<KpiData[]>(baseKpis);
   const [chartData,setChartData]=useState<PerformancePoint[]>(basePerformance.slice(-7));
-  const [refreshKey,setRefreshKey]=useState(1);
-  const [lastUpdate,setLastUpdate]=useState("agora");
 
   const dateFrom=startDateFromPeriod(period);
   const dateTo=DEMO_TODAY;
 
-  const refreshDemo=useCallback(()=>{
-    setDashboardKpis(buildKpis(period));
-    setChartData(buildChart(period));
-    setRefreshKey((key)=>key+1);
-    setLastUpdate(new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}));
-  },[period]);
+  useEffect(()=>{
+    const values=new Uint32Array(1);
+    window.crypto.getRandomValues(values);
+    setSeed(values[0] || Date.now());
+  },[]);
 
   useEffect(()=>{
-    refreshDemo();
-    const timer=window.setInterval(refreshDemo,15000);
-    return ()=>window.clearInterval(timer);
-  },[refreshDemo]);
+    if(!seed)return;
+    setDashboardKpis(buildKpis(period,seed));
+    setChartData(buildChart(period,seed));
+  },[period,seed]);
 
   const exportOverview = () => {
     const rows = [["Indicador","Valor","Variação"], ...dashboardKpis.map((k)=>[k.label,k.value,k.change])];
@@ -115,8 +123,8 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 flex-wrap mt-1">
               <p className="text-sm text-gray-500">Aqui está o resumo completo do seu CRM de consórcios.</p>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-400">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
-                Dados demonstrativos · atualização automática a cada 15s · {lastUpdate}
+                <span className="w-2 h-2 rounded-full bg-green-500"/>
+                Dados demonstrativos · novos valores somente ao entrar ou recarregar
               </span>
             </div>
           </div>
@@ -143,9 +151,26 @@ export default function DashboardPage() {
           {dashboardKpis.map((kpi) => <KpiCard key={kpi.label} data={kpi}/>)}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Link href="/pendencias" className="panel group hover:border-gray-300 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gray-100 grid place-items-center"><CalendarClock size={19}/></div>
+              <div className="flex-1"><p className="text-xs text-gray-400">Pendências de hoje</p><p className="text-2xl font-bold mt-1">4</p><p className="text-xs text-gray-500 mt-1">2 em andamento · 1 aguardando · 1 alta prioridade</p></div>
+              <ArrowRight size={18} className="text-gray-300 group-hover:text-ink"/>
+            </div>
+          </Link>
+          <Link href="/financeiro" className="panel group hover:border-gray-300 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gray-100 grid place-items-center"><WalletCards size={19}/></div>
+              <div className="flex-1"><p className="text-xs text-gray-400">Financeiro do mês</p><p className="text-2xl font-bold mt-1">R$ 17.360</p><p className="text-xs text-gray-500 mt-1">Despesas operacionais · próxima folha 05/10/2026</p></div>
+              <ArrowRight size={18} className="text-gray-300 group-hover:text-ink"/>
+            </div>
+          </Link>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-[1.55fr_0.9fr_0.9fr] gap-5 items-stretch">
           <PerformanceChart data={chartData} period={`${period}D`}/>
-          <TopSellersList refreshKey={refreshKey}/>
+          <TopSellersList refreshKey={seed+period}/>
           <InternalMessages />
         </div>
 
