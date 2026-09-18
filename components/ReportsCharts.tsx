@@ -27,7 +27,7 @@ export default function ReportsCharts({
               <CartesianGrid vertical={false} stroke="#eef0f3"/>
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:11,fill:"#94a3b8"}}/>
               <YAxis axisLine={false} tickLine={false} tick={{fontSize:11,fill:"#94a3b8"}} tickFormatter={(v)=>`R$ ${Math.round(v/1000)}k`}/>
-              <Tooltip formatter={(v:number)=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})}/>
+              <Tooltip formatter={(v:any)=>Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})}/>
               <Legend iconType="circle" wrapperStyle={{fontSize:12}}/>
               <Area type="monotone" dataKey="propostas" name="Propostas" stroke="#111827" strokeWidth={2.4} fill="url(#rProp)"/>
               <Area type="monotone" dataKey="vendas" name="Vendas" stroke="#64748b" strokeWidth={2.4} fill="url(#rVenda)"/>
