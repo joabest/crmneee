@@ -14,20 +14,64 @@ const badgeColors: Record<number, string> = {
 
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-export default function TopSellersList() {
+export default function TopSellersList({ refreshKey = 0 }: { refreshKey?: number }) {
   const [mode, setMode] = useState<Tab>("Top Vendedores");
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
 
-  const rows = useMemo(() => (
-    mode === "Top Bancos"
-      ? banks.map((b, i) => ({ ...b, key:b.name, name:b.name, sub:`${b.proposals} propostas · ${b.sales} vendas`, value:money(b.value), growth:`${b.conversion.toFixed(1)}%`, position:i+1, kind:"bank" }))
-      : mode === "Top Clientes"
-      ? topClients.map((c, i) => ({ ...c, key:c.id, name:c.name, sub:`${c.owner} · ${c.status}`, value:money(c.totalCredit), growth:"Crédito", position:i+1, kind:"client" }))
-      : mode === "Top Compras"
-      ? purchases.slice(0,5).map((p, i) => ({ ...p, key:p.id, name:p.client, sub:`${p.product} · ${p.bank}`, value:money(p.value), growth:p.status, position:i+1, kind:"purchase" }))
-      : topSellers.map((s) => ({ ...s, key:s.name, name:s.name, sub:`${s.proposals} propostas · ${s.sales} vendas`, value:s.value, growth:s.growth, position:s.position, kind:"seller" }))
-  ), [mode]);
+  const rows = useMemo(() => {
+    const seeded = (index:number) => {
+      const x = Math.sin((refreshKey + 1) * 999 + index * 37.17) * 10000;
+      return x - Math.floor(x);
+    };
+
+    if (mode === "Top Bancos") {
+      return banks
+        .map((b, i) => {
+          const proposalsNow = Math.max(40, Math.round(b.proposals * (0.82 + seeded(i) * 0.38)));
+          const salesNow = Math.max(8, Math.min(proposalsNow, Math.round(b.sales * (0.82 + seeded(i+10) * 0.38))));
+          const valueNow = Math.round(b.value * (0.84 + seeded(i+20) * 0.34));
+          const conversionNow = proposalsNow ? salesNow / proposalsNow * 100 : 0;
+          return { ...b, proposals:proposalsNow, sales:salesNow, value:valueNow, conversion:conversionNow, key:b.name, name:b.name, sub:`${proposalsNow} propostas · ${salesNow} vendas`, displayValue:money(valueNow), growth:`${conversionNow.toFixed(1)}%`, kind:"bank" };
+        })
+        .sort((a,b)=>b.value-a.value)
+        .map((row,i)=>({...row,position:i+1}));
+    }
+
+    if (mode === "Top Clientes") {
+      return topClients
+        .map((c, i) => {
+          const creditNow = Math.round(c.totalCredit * (0.82 + seeded(i+30) * 0.4));
+          return { ...c, totalCredit:creditNow, key:c.id, name:c.name, sub:`${c.owner} · ${c.status}`, displayValue:money(creditNow), growth:"Crédito", kind:"client" };
+        })
+        .sort((a,b)=>b.totalCredit-a.totalCredit)
+        .map((row,i)=>({...row,position:i+1}));
+    }
+
+    if (mode === "Top Compras") {
+      return purchases
+        .map((p, i) => {
+          const valueNow = Math.round(p.value * (0.9 + seeded(i+40) * 0.24));
+          return { ...p, value:valueNow, key:p.id, name:p.client, sub:`${p.product} · ${p.bank}`, displayValue:money(valueNow), growth:p.status, kind:"purchase" };
+        })
+        .sort((a,b)=>b.value-a.value)
+        .slice(0,5)
+        .map((row,i)=>({...row,position:i+1}));
+    }
+
+    return topSellers
+      .map((s, i) => {
+        const proposalsNow = Math.max(12, Math.round(s.proposals * (0.82 + seeded(i+50) * 0.36)));
+        const salesNow = Math.max(4, Math.min(proposalsNow, Math.round(s.sales * (0.82 + seeded(i+60) * 0.36))));
+        const conversionNow = salesNow / proposalsNow * 100;
+        const rawValue = Number(s.value.replace(/\D/g,"")) || 200000;
+        const valueNow = Math.round(rawValue * (0.82 + seeded(i+70) * 0.36));
+        const growthNow = Math.round(5 + seeded(i+80) * 19);
+        return { ...s, proposals:proposalsNow, sales:salesNow, conversion:`${conversionNow.toFixed(1).replace(".",",")}%`, value:money(valueNow), growth:`+${growthNow}%`, key:s.name, name:s.name, sub:`${proposalsNow} propostas · ${salesNow} vendas`, displayValue:money(valueNow), kind:"seller" };
+      })
+      .sort((a,b)=>b.sales-a.sales)
+      .map((row,i)=>({...row,position:i+1}));
+  }, [mode, refreshKey]);
 
   const related = selected?.kind === "seller"
     ? proposals.filter((p)=>p.seller===selected.name).slice(0,5)
@@ -70,7 +114,7 @@ export default function TopSellersList() {
                 <p className="text-xs text-gray-500 truncate">{row.sub}</p>
               </div>
               <div className="text-right shrink-0 max-w-[112px]">
-                <p className="text-sm font-semibold text-ink truncate">{row.value}</p>
+                <p className="text-sm font-semibold text-ink truncate">{row.displayValue ?? row.value}</p>
                 <p className={`text-[11px] font-medium flex items-center justify-end gap-0.5 ${mode==="Top Vendedores"?"text-positive":"text-gray-400"}`}>
                   {mode==="Top Vendedores"&&<ArrowUp size={10}/>} {row.growth}
                 </p>
