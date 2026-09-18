@@ -22,6 +22,11 @@ export interface Seller {
   value: string;
   growth: string;
   conversion: string;
+  role: string;
+  hierarchy: string;
+  email: string;
+  phone: string;
+  joined: string;
 }
 
 export interface Message {
@@ -30,6 +35,9 @@ export interface Message {
   avatar: string;
   time: string;
   preview: string;
+  body: string;
+  role: string;
+  hierarchy: string;
   unread?: number;
   isGroup?: boolean;
 }
@@ -78,6 +86,8 @@ export interface Quota {
   installmentsPaid: number;
   installmentsTotal: number;
   status: "Ativa" | "Contemplada" | "Encerrada" | "Em atraso";
+  seller: string;
+  startDate: string;
 }
 
 export interface BankData {
@@ -86,6 +96,9 @@ export interface BankData {
   sales: number;
   value: number;
   conversion: number;
+  manager: string;
+  phone: string;
+  email: string;
 }
 
 export interface Purchase {
@@ -97,6 +110,7 @@ export interface Purchase {
   seller: string;
   date: string;
   status: "Confirmada" | "Pendente" | "Cancelada";
+  payment: string;
 }
 
 export interface ServiceTicket {
@@ -123,4 +137,6 @@ export interface EmailThread {
   time: string;
   unread?: boolean;
   body: string;
+  role: string;
+  hierarchy: string;
 }
