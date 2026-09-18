@@ -161,10 +161,15 @@ function MessagesPage() {
 
 function ReportsPage() {
   const [view,setView]=useState("Mensal");
+  const chartData = view === "Mensal" ? performanceData : [
+    { month:"Jun-Jul", propostas: performanceData[0].propostas + performanceData[1].propostas, vendas: performanceData[0].vendas + performanceData[1].vendas },
+    { month:"Ago-Out", propostas: performanceData[2].propostas + performanceData[3].propostas + performanceData[4].propostas, vendas: performanceData[2].vendas + performanceData[3].vendas + performanceData[4].vendas },
+    { month:"Nov-Dez", propostas: performanceData[5].propostas + performanceData[6].propostas, vendas: performanceData[5].vendas + performanceData[6].vendas },
+  ];
   return <>
-    <PageHeader title="Relatórios" subtitle="Indicadores consolidados para o administrador." action={<button onClick={()=>downloadCsv("relatorio-performance.csv",[["Mês","Propostas","Vendas"],...performanceData.map((p)=>[p.month,p.propostas,p.vendas])])} className="btn-secondary"><Download size={15}/>Exportar CSV</button>}/>
+    <PageHeader title="Relatórios" subtitle="Indicadores consolidados para o administrador." action={<button onClick={()=>downloadCsv("relatorio-performance.csv",[["Período","Propostas","Vendas"],...chartData.map((p)=>[p.month,p.propostas,p.vendas])])} className="btn-secondary"><Download size={15}/>Exportar CSV</button>}/>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[["Propostas","1.326"],["Vendas","298"],["Conversão","22,5%"],["Receita estimada","R$ 3,4 mi"]].map(([a,b])=><div className="panel" key={a}><p className="text-xs text-gray-400">{a}</p><p className="text-2xl font-bold mt-2">{b}</p></div>)}</div>
-    <div className="panel"><div className="flex items-center justify-between mb-5"><div><h3 className="font-semibold">Propostas x Vendas</h3><p className="text-xs text-gray-400 mt-1">Dados demonstrativos</p></div><select className="field" value={view} onChange={(e)=>setView(e.target.value)}><option>Mensal</option><option>Trimestral</option></select></div><div className="h-[360px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={performanceData}><CartesianGrid vertical={false} stroke="#f1f3f5"/><XAxis dataKey="month" axisLine={false} tickLine={false}/><YAxis axisLine={false} tickLine={false}/><Tooltip/><Bar dataKey="propostas" fill="#111827" radius={[6,6,0,0]}/><Bar dataKey="vendas" fill="#94a3b8" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></div></div>
+    <div className="panel"><div className="flex items-center justify-between mb-5 gap-3 flex-wrap"><div><h3 className="font-semibold">Propostas x Vendas</h3><p className="text-xs text-gray-400 mt-1">Dados demonstrativos · filtro {view.toLowerCase()}</p></div><select className="field" value={view} onChange={(e)=>setView(e.target.value)}><option>Mensal</option><option>Trimestral</option></select></div><div className="h-[300px] sm:h-[360px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid vertical={false} stroke="#f1f3f5"/><XAxis dataKey="month" axisLine={false} tickLine={false}/><YAxis axisLine={false} tickLine={false}/><Tooltip/><Bar dataKey="propostas" fill="#111827" radius={[6,6,0,0]}/><Bar dataKey="vendas" fill="#94a3b8" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></div></div>
   </>;
 }
 
