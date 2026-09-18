@@ -26,8 +26,8 @@ export default function Sidebar({
   return (
     <aside className={
       mobile
-        ? "fixed inset-y-0 left-0 z-50 flex w-[286px] flex-col bg-white border-r border-gray-200 shadow-2xl"
-        : "hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-gray-200 h-screen sticky top-0"
+        ? "fixed bottom-0 left-0 top-[36px] z-50 flex w-[286px] flex-col bg-white border-r border-gray-200 shadow-2xl"
+        : "hidden lg:flex w-64 shrink-0 flex-col bg-white border-r border-gray-200 h-[calc(100vh-36px)] sticky top-0"
     }>
       <div className="flex items-center gap-2 px-6 py-6">
         <div className="w-10 h-10 rounded-xl bg-ink flex items-center justify-center text-white font-black text-sm tracking-tight">
