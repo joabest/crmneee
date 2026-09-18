@@ -91,15 +91,118 @@ function ClientsPage(){
 }
 
 function QuotasPage(){
-  const [rows,setRows]=useState<Quota[]>(initialQuotas); const [query,setQuery]=useState(""); const [status,setStatus]=useState("Todos"); const [edit,setEdit]=useState<Quota|null>(null);
-  const filtered=rows.filter((q)=>(!query||[q.client,q.bank,q.group,q.quota,q.seller].join(" ").toLowerCase().includes(query.toLowerCase()))&&(status==="Todos"||q.status===status));
-  const save=()=>{if(!edit)return;setRows((old)=>old.map((q)=>q.id===edit.id?edit:q));setEdit(null)};
+  const [rows,setRows]=useState<Quota[]>(initialQuotas);
+  const [query,setQuery]=useState("");
+  const [status,setStatus]=useState("Todos");
+  const [edit,setEdit]=useState<Quota|null>(null);
+  const [selected,setSelected]=useState<Quota|null>(null);
+  const [sortKey,setSortKey]=useState<keyof Quota>("group");
+  const [sortDir,setSortDir]=useState<"asc"|"desc">("asc");
+
+  const sort=(key:keyof Quota)=>{
+    if(sortKey===key) setSortDir((d)=>d==="asc"?"desc":"asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const filtered=useMemo(()=>{
+    const out=rows.filter((q)=>
+      (!query||[q.client,q.bank,q.group,q.quota,q.seller,q.status].join(" ").toLowerCase().includes(query.toLowerCase())) &&
+      (status==="Todos"||q.status===status)
+    );
+    return out.slice().sort((a,b)=>{
+      const av=a[sortKey];
+      const bv=b[sortKey];
+      let cmp=0;
+      if(typeof av==="number" && typeof bv==="number") cmp=av-bv;
+      else cmp=String(av??"").localeCompare(String(bv??""),"pt-BR",{numeric:true,sensitivity:"base"});
+      return sortDir==="asc"?cmp:-cmp;
+    });
+  },[rows,query,status,sortKey,sortDir]);
+
+  const save=()=>{
+    if(!edit)return;
+    setRows((old)=>old.map((q)=>q.id===edit.id?edit:q));
+    setSelected((old)=>old?.id===edit.id?edit:old);
+    setEdit(null);
+  };
+
+  const th=(key:keyof Quota,label:string)=>(
+    <th>
+      <button onClick={()=>sort(key)} className="inline-flex items-center gap-1 hover:text-gray-700">
+        {label}<SortIcon active={sortKey===key} dir={sortDir}/>
+      </button>
+    </th>
+  );
+
   return <>
-    <PageHeader title="Cotas" subtitle="Gerencie grupo, cota, crédito, parcelas, responsável e situação." action={<button onClick={()=>downloadCsv("cotas.csv",[["Grupo","Cota","Cliente","Banco","Crédito","Pago","Status","Vendedor"],...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,q.credit,q.paidPercent+"%",q.status,q.seller])])} className="btn-secondary"><Download size={15}/>Exportar</button>}/>
-    <div className="panel"><div className="toolbar mb-4"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar cota, grupo, cliente, banco ou vendedor..."/></div><select className="field w-full sm:w-auto" value={status} onChange={(e)=>setStatus(e.target.value)}><option>Todos</option>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select></div>
-      <div className="overflow-x-auto"><table className="data-table min-w-[1050px]"><thead><tr><th>Grupo / Cota</th><th>Cliente</th><th>Banco</th><th>Crédito</th><th>Parcelas</th><th>Progresso</th><th>Vendedor</th><th>Status</th><th>Ações</th></tr></thead><tbody>{filtered.map((q)=><tr key={q.id}><td><b>{q.group}</b><small>{q.quota} · início {q.startDate}</small></td><td>{q.client}</td><td>{q.bank}</td><td>{money(q.credit)}</td><td>{q.installmentsPaid}/{q.installmentsTotal}</td><td><div className="w-32 bg-gray-100 h-2 rounded-full"><div className="h-2 bg-ink rounded-full" style={{width:`${Math.min(q.paidPercent,100)}%`}}/></div><small>{q.paidPercent.toFixed(1)}%</small></td><td>{q.seller}</td><td><span className="pill">{q.status}</span></td><td><button onClick={()=>setEdit({...q})} className="btn-secondary py-1.5 px-2.5"><Edit3 size={13}/>Editar</button></td></tr>)}</tbody></table></div>
+    <PageHeader title="Cotas" subtitle="Clique nos títulos das colunas para ordenar e em qualquer cota para visualizar todos os dados." action={<button onClick={()=>downloadCsv("cotas.csv",[["Grupo","Cota","Cliente","Banco","Crédito","Parcelas pagas","Total parcelas","Pago","Status","Vendedor"],...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,q.credit,q.installmentsPaid,q.installmentsTotal,q.paidPercent+"%",q.status,q.seller])])} className="btn-secondary"><Download size={15}/>Exportar</button>}/>
+    <div className="panel">
+      <div className="toolbar mb-4">
+        <div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar cota, grupo, cliente, banco ou vendedor..."/></div>
+        <select className="field w-full sm:w-auto" value={status} onChange={(e)=>setStatus(e.target.value)}><option>Todos</option>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="data-table min-w-[1180px]">
+          <thead><tr>
+            {th("group","Grupo")}
+            {th("quota","Cota")}
+            {th("client","Cliente")}
+            {th("bank","Banco")}
+            {th("credit","Crédito")}
+            {th("installmentsPaid","Parcelas")}
+            {th("paidPercent","Progresso")}
+            {th("seller","Vendedor")}
+            {th("status","Status")}
+            <th>Ações</th>
+          </tr></thead>
+          <tbody>{filtered.map((q)=><tr key={q.id} onClick={()=>setSelected(q)} className="cursor-pointer">
+            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.group}</b><small>{q.id}</small></button></td>
+            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.quota}</b><small>início {q.startDate}</small></button></td>
+            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4">{q.client}</button></td>
+            <td>{q.bank}</td>
+            <td>{money(q.credit)}</td>
+            <td>{q.installmentsPaid}/{q.installmentsTotal}</td>
+            <td><div className="w-32 bg-gray-100 h-2 rounded-full"><div className="h-2 bg-ink rounded-full" style={{width:`${Math.min(q.paidPercent,100)}%`}}/></div><small>{q.paidPercent.toFixed(1)}%</small></td>
+            <td>{q.seller}</td>
+            <td><span className="pill">{q.status}</span></td>
+            <td><button onClick={(e)=>{e.stopPropagation();setEdit({...q})}} className="btn-secondary py-1.5 px-2.5"><Edit3 size={13}/>Editar</button></td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+      {!filtered.length&&<div className="py-10 text-center text-sm text-gray-400">Nenhuma cota encontrada.</div>}
     </div>
-    {edit&&<Modal title={`Editar cota ${edit.quota}`} onClose={()=>setEdit(null)} max="max-w-lg"><div className="space-y-3"><div><label className="label">Status</label><select className="field w-full" value={edit.status} onChange={(e)=>setEdit({...edit,status:e.target.value as Quota["status"]})}>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select></div><div className="grid grid-cols-2 gap-3"><div><label className="label">Parcelas pagas</label><input type="number" className="field w-full" value={edit.installmentsPaid} onChange={(e)=>setEdit({...edit,installmentsPaid:Number(e.target.value),paidPercent:Math.min(100,Number(e.target.value)/edit.installmentsTotal*100)})}/></div><div><label className="label">Total parcelas</label><input type="number" className="field w-full" value={edit.installmentsTotal} onChange={(e)=>setEdit({...edit,installmentsTotal:Number(e.target.value)})}/></div></div><div><label className="label">Valor do crédito</label><input type="number" className="field w-full" value={edit.credit} onChange={(e)=>setEdit({...edit,credit:Number(e.target.value)})}/></div><button onClick={save} className="btn-primary w-full justify-center">Salvar alterações</button></div></Modal>}
+
+    {selected&&<Modal title={`Cota ${selected.quota}`} onClose={()=>setSelected(null)}>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+        <div className="metric"><b>{selected.group}</b><span>Grupo</span></div>
+        <div className="metric"><b>{selected.quota}</b><span>Número da cota</span></div>
+        <div className="metric"><b>{selected.status}</b><span>Status</span></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Cliente</p><b>{selected.client}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Banco / Administradora</p><b>{selected.bank}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Crédito</p><b>{money(selected.credit)}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Parcelas pagas</p><b>{selected.installmentsPaid} de {selected.installmentsTotal}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Progresso</p><b>{selected.paidPercent.toFixed(1)}%</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Início</p><b>{selected.startDate}</b></div>
+        <div className="panel p-3 md:col-span-2"><p className="text-xs text-gray-400">Responsável / vendedor</p><b>{selected.seller}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Registro</p><b>{selected.id}</b></div>
+      </div>
+      <div className="mt-5">
+        <div className="flex items-center justify-between text-xs mb-2"><span className="text-gray-500">Andamento das parcelas</span><b>{selected.paidPercent.toFixed(1)}%</b></div>
+        <div className="w-full bg-gray-100 h-3 rounded-full"><div className="h-3 bg-ink rounded-full" style={{width:`${Math.min(selected.paidPercent,100)}%`}}/></div>
+      </div>
+      <button onClick={()=>{setEdit({...selected});setSelected(null)}} className="btn-primary mt-5"><Edit3 size={15}/>Editar esta cota</button>
+    </Modal>}
+
+    {edit&&<Modal title={`Editar cota ${edit.quota}`} onClose={()=>setEdit(null)} max="max-w-lg">
+      <div className="space-y-3">
+        <div><label className="label">Grupo</label><input className="field w-full" value={edit.group} onChange={(e)=>setEdit({...edit,group:e.target.value})}/></div>
+        <div><label className="label">Número da cota</label><input className="field w-full" value={edit.quota} onChange={(e)=>setEdit({...edit,quota:e.target.value})}/></div>
+        <div><label className="label">Status</label><select className="field w-full" value={edit.status} onChange={(e)=>setEdit({...edit,status:e.target.value as Quota["status"]})}>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select></div>
+        <div className="grid grid-cols-2 gap-3"><div><label className="label">Parcelas pagas</label><input type="number" className="field w-full" value={edit.installmentsPaid} onChange={(e)=>setEdit({...edit,installmentsPaid:Number(e.target.value),paidPercent:Math.min(100,Number(e.target.value)/Math.max(edit.installmentsTotal,1)*100)})}/></div><div><label className="label">Total parcelas</label><input type="number" className="field w-full" value={edit.installmentsTotal} onChange={(e)=>setEdit({...edit,installmentsTotal:Number(e.target.value),paidPercent:Math.min(100,edit.installmentsPaid/Math.max(Number(e.target.value),1)*100)})}/></div></div>
+        <div><label className="label">Valor do crédito</label><input type="number" className="field w-full" value={edit.credit} onChange={(e)=>setEdit({...edit,credit:Number(e.target.value)})}/></div>
+        <button onClick={save} className="btn-primary w-full justify-center">Salvar alterações</button>
+      </div>
+    </Modal>}
   </>;
 }
 
@@ -148,20 +251,84 @@ function PurchasesPage(){
 function MessagesPage(){
   const mappedMessages:EmailThread[]=messages.map((m)=>({id:m.id,from:m.name,avatar:m.avatar,subject:"Mensagem direta",preview:m.preview,time:m.time,unread:Boolean(m.unread),body:m.body,role:m.role,hierarchy:m.hierarchy}));
   const initial=[...emailThreads,...mappedMessages];
-  const [threads,setThreads]=useState<EmailThread[]>(initial); const [selected,setSelected]=useState<EmailThread>(initial[0]); const [query,setQuery]=useState(""); const [compose,setCompose]=useState(false); const [to,setTo]=useState("Equipe Comercial"); const [subject,setSubject]=useState(""); const [body,setBody]=useState("");
+  const [threads,setThreads]=useState<EmailThread[]>(initial);
+  const [selected,setSelected]=useState<EmailThread>(initial[0]);
+  const [query,setQuery]=useState("");
+  const [compose,setCompose]=useState(false);
+  const [to,setTo]=useState("Equipe Comercial");
+  const [subject,setSubject]=useState("");
+  const [body,setBody]=useState("");
+
   useEffect(()=>{
     const id=new URLSearchParams(window.location.search).get("thread");
     if(id){const found=threads.find((t)=>t.id===id);if(found)setSelected(found)}
   },[threads]);
+
   const visible=threads.filter((t)=>[t.from,t.subject,t.preview,t.role,t.hierarchy].join(" ").toLowerCase().includes(query.toLowerCase()));
-  const send=()=>{if(!subject.trim()||!body.trim())return;const item:EmailThread={id:"sent-"+Date.now(),from:"Você → "+to,avatar:"",subject,preview:body.slice(0,70),time:"Agora",body,role:"Administrador",hierarchy:"Administração · Nível máximo"};setThreads((o)=>[item,...o]);setSelected(item);setCompose(false);setSubject("");setBody("")};
+
+  const conversation=(t:EmailThread)=>{
+    const person=t.from.replace("Você → ","");
+    const isSent=t.from.startsWith("Você → ");
+    const base=[
+      {id:"a",who:isSent?"me":"them",name:isSent?"Daniel Vorcaro":person,text:t.body,time:t.time},
+      {id:"b",who:isSent?"them":"me",name:isSent?person:"Daniel Vorcaro",text:isSent?"Recebido. Vou verificar e retorno por aqui.":"Recebi. Vou verificar isso agora e te retorno por aqui.",time:"Pouco depois"},
+      {id:"c",who:isSent?"me":"them",name:isSent?"Daniel Vorcaro":person,text:isSent?"Perfeito. Se precisar de mais alguma informação, me avise.":"Perfeito, obrigado. Fico no aguardo e atualizo o CRM assim que tiver retorno.",time:"Agora"}
+    ];
+    return base;
+  };
+
+  const send=()=>{
+    if(!subject.trim()||!body.trim())return;
+    const item:EmailThread={id:"sent-"+Date.now(),from:"Você → "+to,avatar:"",subject,preview:body.slice(0,70),time:"Agora",body,role:"Administrador",hierarchy:"Administração · Nível máximo"};
+    setThreads((o)=>[item,...o]);setSelected(item);setCompose(false);setSubject("");setBody("");
+  };
+
   return <>
-    <PageHeader title="Mensagens internas" subtitle="Abra a mensagem completa e veja o cargo e o nível hierárquico de quem enviou." action={<button onClick={()=>setCompose(true)} className="btn-primary"><Plus size={16}/>Nova mensagem</button>}/>
+    <PageHeader title="Mensagens internas" subtitle="Clique em uma conversa para visualizar toda a troca de mensagens, com remetente, cargo e hierarquia." action={<button onClick={()=>setCompose(true)} className="btn-primary"><Plus size={16}/>Nova mensagem</button>}/>
     <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 min-h-[650px]">
-      <div className="panel p-0 overflow-hidden"><div className="p-4 border-b border-gray-100"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar mensagens..."/></div></div><div className="max-h-[580px] overflow-y-auto">{visible.map((t)=><button key={t.id} onClick={()=>setSelected(t)} className={`w-full p-4 text-left border-b border-gray-100 hover:bg-gray-50 ${selected.id===t.id?"bg-gray-50":""}`}><div className="flex justify-between gap-2"><b className="text-sm truncate">{t.from}</b><span className="text-[11px] text-gray-400 shrink-0">{t.time}</span></div><p className="text-[11px] text-gray-400 mt-1 truncate">{t.role} · {t.hierarchy}</p><p className="text-xs font-medium mt-1 truncate">{t.subject}</p><p className="text-xs text-gray-400 mt-1 truncate">{t.preview}</p></button>)}</div></div>
-      <div className="panel flex flex-col"><div className="pb-4 border-b border-gray-100"><div className="flex items-center gap-3">{selected.avatar?<img src={selected.avatar} loading="lazy" className="w-12 h-12 rounded-full object-cover" alt={selected.from}/>:<div className="w-12 h-12 rounded-full bg-gray-100 grid place-items-center"><Mail size={18}/></div>}<div><p className="font-semibold">{selected.from}</p><p className="text-xs text-gray-500 mt-0.5">{selected.role}</p><p className="text-[11px] text-gray-400">{selected.hierarchy}</p></div></div><h2 className="text-xl font-bold mt-5">{selected.subject}</h2><p className="text-xs text-gray-400 mt-1">{selected.time}</p></div><div className="py-6 flex-1 text-sm text-gray-600 leading-7 whitespace-pre-wrap">{selected.body}</div><div className="pt-4 border-t border-gray-100"><button onClick={()=>{setTo(selected.from.replace("Você → ",""));setSubject("Re: "+selected.subject);setCompose(true)}} className="btn-primary"><Send size={15}/>Responder</button></div></div>
+      <div className="panel p-0 overflow-hidden">
+        <div className="p-4 border-b border-gray-100"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar mensagens..."/></div></div>
+        <div className="max-h-[580px] overflow-y-auto">{visible.map((t)=><button key={t.id} onClick={()=>setSelected(t)} className={`w-full p-4 text-left border-b border-gray-100 hover:bg-gray-50 ${selected.id===t.id?"bg-gray-50":""}`}>
+          <div className="flex justify-between gap-2"><b className="text-sm truncate">{t.from}</b><span className="text-[11px] text-gray-400 shrink-0">{t.time}</span></div>
+          <p className="text-[11px] text-gray-400 mt-1 truncate">{t.role} · {t.hierarchy}</p>
+          <p className="text-xs font-medium mt-1 truncate">{t.subject}</p>
+          <p className="text-xs text-gray-400 mt-1 truncate">{t.preview}</p>
+        </button>)}</div>
+      </div>
+
+      <div className="panel flex flex-col min-h-[620px]">
+        <div className="pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            {selected.avatar?<img src={selected.avatar} loading="lazy" className="w-12 h-12 rounded-full object-cover" alt={selected.from}/>:<div className="w-12 h-12 rounded-full bg-gray-100 grid place-items-center"><Mail size={18}/></div>}
+            <div><p className="font-semibold">{selected.from}</p><p className="text-xs text-gray-500 mt-0.5">{selected.role}</p><p className="text-[11px] text-gray-400">{selected.hierarchy}</p></div>
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold mt-5">{selected.subject}</h2>
+        </div>
+
+        <div className="py-5 flex-1 space-y-4 overflow-y-auto max-h-[500px]">
+          {conversation(selected).map((m)=><div key={m.id} className={`flex ${m.who==="me"?"justify-end":"justify-start"}`}>
+            <div className={`max-w-[88%] sm:max-w-[72%] rounded-2xl px-4 py-3 ${m.who==="me"?"bg-ink text-white rounded-br-md":"bg-gray-100 text-gray-700 rounded-bl-md"}`}>
+              <div className={`text-[10px] font-semibold mb-1 ${m.who==="me"?"text-gray-300":"text-gray-500"}`}>{m.name}</div>
+              <p className="text-sm leading-6 whitespace-pre-wrap">{m.text}</p>
+              <div className={`text-[10px] mt-2 text-right ${m.who==="me"?"text-gray-400":"text-gray-400"}`}>{m.time}</div>
+            </div>
+          </div>)}
+        </div>
+
+        <div className="pt-4 border-t border-gray-100">
+          <button onClick={()=>{setTo(selected.from.replace("Você → ",""));setSubject("Re: "+selected.subject);setCompose(true)}} className="btn-primary"><Send size={15}/>Responder</button>
+        </div>
+      </div>
     </div>
-    {compose&&<Modal title="Nova mensagem interna" onClose={()=>setCompose(false)} max="max-w-lg"><div className="space-y-3"><select className="field w-full" value={to} onChange={(e)=>setTo(e.target.value)}>{["Equipe Comercial","Pedro Almeida","Juliana Souza","Marcos Lima","Renata Dias","Felipe Rocha"].map((x)=><option key={x}>{x}</option>)}</select><input className="field w-full" placeholder="Assunto" value={subject} onChange={(e)=>setSubject(e.target.value)}/><textarea className="field w-full min-h-40 resize-none" placeholder="Escreva a mensagem..." value={body} onChange={(e)=>setBody(e.target.value)}/><button onClick={send} className="btn-primary w-full justify-center"><Send size={15}/>Enviar mensagem</button></div></Modal>}
+
+    {compose&&<Modal title="Nova mensagem interna" onClose={()=>setCompose(false)} max="max-w-lg">
+      <div className="space-y-3">
+        <select className="field w-full" value={to} onChange={(e)=>setTo(e.target.value)}>{["Equipe Comercial","Pedro Almeida","Juliana Souza","Marcos Lima","Renata Dias","Felipe Rocha"].map((x)=><option key={x}>{x}</option>)}</select>
+        <input className="field w-full" placeholder="Assunto" value={subject} onChange={(e)=>setSubject(e.target.value)}/>
+        <textarea className="field w-full min-h-40 resize-none" placeholder="Escreva a mensagem..." value={body} onChange={(e)=>setBody(e.target.value)}/>
+        <button onClick={send} className="btn-primary w-full justify-center"><Send size={15}/>Enviar mensagem</button>
+      </div>
+    </Modal>}
   </>;
 }
 
