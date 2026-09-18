@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Download, Edit3,
   FileSpreadsheet, Mail, MessageSquare, MoreHorizontal, Phone, Plus, Search,
@@ -147,11 +146,13 @@ function PurchasesPage(){
 }
 
 function MessagesPage(){
-  const params=useSearchParams();
   const mappedMessages:EmailThread[]=messages.map((m)=>({id:m.id,from:m.name,avatar:m.avatar,subject:"Mensagem direta",preview:m.preview,time:m.time,unread:Boolean(m.unread),body:m.body,role:m.role,hierarchy:m.hierarchy}));
   const initial=[...emailThreads,...mappedMessages];
   const [threads,setThreads]=useState<EmailThread[]>(initial); const [selected,setSelected]=useState<EmailThread>(initial[0]); const [query,setQuery]=useState(""); const [compose,setCompose]=useState(false); const [to,setTo]=useState("Equipe Comercial"); const [subject,setSubject]=useState(""); const [body,setBody]=useState("");
-  useEffect(()=>{const id=params.get("thread");if(id){const found=threads.find((t)=>t.id===id);if(found)setSelected(found)}},[params,threads]);
+  useEffect(()=>{
+    const id=new URLSearchParams(window.location.search).get("thread");
+    if(id){const found=threads.find((t)=>t.id===id);if(found)setSelected(found)}
+  },[threads]);
   const visible=threads.filter((t)=>[t.from,t.subject,t.preview,t.role,t.hierarchy].join(" ").toLowerCase().includes(query.toLowerCase()));
   const send=()=>{if(!subject.trim()||!body.trim())return;const item:EmailThread={id:"sent-"+Date.now(),from:"Você → "+to,avatar:"",subject,preview:body.slice(0,70),time:"Agora",body,role:"Administrador",hierarchy:"Administração · Nível máximo"};setThreads((o)=>[item,...o]);setSelected(item);setCompose(false);setSubject("");setBody("")};
   return <>
