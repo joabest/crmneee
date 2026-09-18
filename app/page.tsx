@@ -3,16 +3,14 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import KpiCard from "@/components/KpiCard";
-import RankingTabs from "@/components/RankingTabs";
 import PerformanceChart from "@/components/PerformanceChart";
 import TopSellersList from "@/components/TopSellersList";
 import InternalMessages from "@/components/InternalMessages";
 import ProposalsTable from "@/components/ProposalsTable";
-import { kpis, tabs } from "@/lib/mock-data";
+import { kpis } from "@/lib/mock-data";
 import { Download } from "lucide-react";
 
 export default function DashboardPage() {
-  const [activeRanking, setActiveRanking] = useState<(typeof tabs)[number]>("Top Vendedores");
   const [dateFrom, setDateFrom] = useState("2026-09-01");
   const [dateTo, setDateTo] = useState("2026-09-17");
 
@@ -50,11 +48,9 @@ export default function DashboardPage() {
           {kpis.map((kpi) => <KpiCard key={kpi.label} data={kpi}/>)}
         </div>
 
-        <RankingTabs active={activeRanking} onChange={setActiveRanking}/>
-
         <div className="grid grid-cols-1 xl:grid-cols-[1.55fr_0.9fr_0.9fr] gap-5 items-stretch">
           <PerformanceChart />
-          <TopSellersList mode={activeRanking}/>
+          <TopSellersList />
           <InternalMessages />
         </div>
 
