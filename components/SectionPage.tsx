@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Download, Edit3,
+  ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Download, Edit3, Filter,
   FileSpreadsheet, Mail, MessageSquare, MoreHorizontal, Phone, Plus, Search,
-  Send, Upload, UserPlus, X
+  Send, SlidersHorizontal, Upload, UserPlus, X
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import ProposalsTable from "@/components/ProposalsTable";
@@ -93,31 +93,57 @@ function ClientsPage(){
 function QuotasPage(){
   const [rows,setRows]=useState<Quota[]>(initialQuotas);
   const [query,setQuery]=useState("");
-  const [status,setStatus]=useState("Todos");
-  const [edit,setEdit]=useState<Quota|null>(null);
   const [selected,setSelected]=useState<Quota|null>(null);
+  const [edit,setEdit]=useState<Quota|null>(null);
   const [sortKey,setSortKey]=useState<keyof Quota>("group");
   const [sortDir,setSortDir]=useState<"asc"|"desc">("asc");
+  const [showFilters,setShowFilters]=useState(false);
+  const [filters,setFilters]=useState({
+    status:"Todos", bank:"Todos", seller:"Todos", dateFrom:"", dateTo:"",
+    minCredit:"", maxCredit:"", minProgress:""
+  });
+  const [visible,setVisible]=useState<Record<string,boolean>>({
+    group:true, quota:true, client:true, bank:true, credit:true, installments:true,
+    progress:true, startDate:true, seller:true, status:true
+  });
+
+  const banksList=Array.from(new Set(rows.map((q)=>q.bank))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const sellersList=Array.from(new Set(rows.map((q)=>q.seller))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+
+  const toIso=(date:string)=>{
+    const [d,m,y]=date.split("/");
+    return y&&m&&d?`${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`:"";
+  };
 
   const sort=(key:keyof Quota)=>{
-    if(sortKey===key) setSortDir((d)=>d==="asc"?"desc":"asc");
-    else { setSortKey(key); setSortDir("asc"); }
+    if(sortKey===key)setSortDir((d)=>d==="asc"?"desc":"asc");
+    else{setSortKey(key);setSortDir("asc")}
   };
 
   const filtered=useMemo(()=>{
-    const out=rows.filter((q)=>
-      (!query||[q.client,q.bank,q.group,q.quota,q.seller,q.status].join(" ").toLowerCase().includes(query.toLowerCase())) &&
-      (status==="Todos"||q.status===status)
-    );
+    const q=query.trim().toLowerCase();
+    const out=rows.filter((item)=>{
+      const startIso=toIso(item.startDate);
+      const matchesQuery=!q||[item.id,item.client,item.bank,item.group,item.quota,item.seller,item.status,item.startDate].join(" ").toLowerCase().includes(q);
+      const matchesStatus=filters.status==="Todos"||item.status===filters.status;
+      const matchesBank=filters.bank==="Todos"||item.bank===filters.bank;
+      const matchesSeller=filters.seller==="Todos"||item.seller===filters.seller;
+      const matchesFrom=!filters.dateFrom||startIso>=filters.dateFrom;
+      const matchesTo=!filters.dateTo||startIso<=filters.dateTo;
+      const matchesMinCredit=!filters.minCredit||item.credit>=Number(filters.minCredit);
+      const matchesMaxCredit=!filters.maxCredit||item.credit<=Number(filters.maxCredit);
+      const matchesProgress=!filters.minProgress||item.paidPercent>=Number(filters.minProgress);
+      return matchesQuery&&matchesStatus&&matchesBank&&matchesSeller&&matchesFrom&&matchesTo&&matchesMinCredit&&matchesMaxCredit&&matchesProgress;
+    });
     return out.slice().sort((a,b)=>{
-      const av=a[sortKey];
-      const bv=b[sortKey];
+      const av=a[sortKey],bv=b[sortKey];
       let cmp=0;
-      if(typeof av==="number" && typeof bv==="number") cmp=av-bv;
+      if(typeof av==="number"&&typeof bv==="number")cmp=av-bv;
+      else if(sortKey==="startDate")cmp=toIso(String(av)).localeCompare(toIso(String(bv)));
       else cmp=String(av??"").localeCompare(String(bv??""),"pt-BR",{numeric:true,sensitivity:"base"});
       return sortDir==="asc"?cmp:-cmp;
     });
-  },[rows,query,status,sortKey,sortDir]);
+  },[rows,query,filters,sortKey,sortDir]);
 
   const save=()=>{
     if(!edit)return;
@@ -126,50 +152,111 @@ function QuotasPage(){
     setEdit(null);
   };
 
+  const resetFilters=()=>setFilters({status:"Todos",bank:"Todos",seller:"Todos",dateFrom:"",dateTo:"",minCredit:"",maxCredit:"",minProgress:""});
+
   const th=(key:keyof Quota,label:string)=>(
     <th>
-      <button onClick={()=>sort(key)} className="inline-flex items-center gap-1 hover:text-gray-700">
+      <button onClick={()=>sort(key)} className="inline-flex items-center gap-1 hover:text-gray-700 whitespace-nowrap">
         {label}<SortIcon active={sortKey===key} dir={sortDir}/>
       </button>
     </th>
   );
 
+  const exportRows=()=>downloadCsv("cotas-mv-crm.csv",[
+    ["Grupo","Cota","Cliente","Banco","Crédito","Parcelas pagas","Total parcelas","Progresso","Data início","Vendedor","Status"],
+    ...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,q.credit,q.installmentsPaid,q.installmentsTotal,q.paidPercent+"%",q.startDate,q.seller,q.status])
+  ]);
+
   return <>
-    <PageHeader title="Cotas" subtitle="Clique nos títulos das colunas para ordenar e em qualquer cota para visualizar todos os dados." action={<button onClick={()=>downloadCsv("cotas.csv",[["Grupo","Cota","Cliente","Banco","Crédito","Parcelas pagas","Total parcelas","Pago","Status","Vendedor"],...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,q.credit,q.installmentsPaid,q.installmentsTotal,q.paidPercent+"%",q.status,q.seller])])} className="btn-secondary"><Download size={15}/>Exportar</button>}/>
+    <PageHeader
+      title="Cotas"
+      subtitle="Ordene por grupo, cota, cliente, datas e demais campos. Use Filtros para escolher exatamente o que aparece na lista."
+      action={<button onClick={exportRows} className="btn-secondary"><Download size={15}/>Exportar</button>}
+    />
+
     <div className="panel">
       <div className="toolbar mb-4">
-        <div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar cota, grupo, cliente, banco ou vendedor..."/></div>
-        <select className="field w-full sm:w-auto" value={status} onChange={(e)=>setStatus(e.target.value)}><option>Todos</option>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select>
+        <div className="searchbox">
+          <Search size={16}/>
+          <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar cota, grupo, cliente, banco, data ou vendedor..."/>
+        </div>
+        <button onClick={()=>setShowFilters((v)=>!v)} className={`btn-secondary justify-center ${showFilters?"bg-ink text-white border-ink hover:bg-black":""}`}>
+          <Filter size={15}/>Filtros
+        </button>
       </div>
+
+      {showFilters&&<div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div><h3 className="font-semibold text-sm">Filtros e visualização</h3><p className="text-xs text-gray-400 mt-1">Filtre os registros e marque somente as informações que deseja enxergar na tabela.</p></div>
+          <button onClick={resetFilters} className="text-xs font-medium underline underline-offset-4">Limpar filtros</button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div><label className="label">Status</label><select className="field w-full" value={filters.status} onChange={(e)=>setFilters({...filters,status:e.target.value})}><option>Todos</option>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select></div>
+          <div><label className="label">Banco / Administradora</label><select className="field w-full" value={filters.bank} onChange={(e)=>setFilters({...filters,bank:e.target.value})}><option>Todos</option>{banksList.map((x)=><option key={x}>{x}</option>)}</select></div>
+          <div><label className="label">Vendedor</label><select className="field w-full" value={filters.seller} onChange={(e)=>setFilters({...filters,seller:e.target.value})}><option>Todos</option>{sellersList.map((x)=><option key={x}>{x}</option>)}</select></div>
+          <div><label className="label">Progresso mínimo (%)</label><input type="number" min="0" max="100" className="field w-full" value={filters.minProgress} onChange={(e)=>setFilters({...filters,minProgress:e.target.value})} placeholder="Ex.: 25"/></div>
+          <div><label className="label">Data inicial</label><input type="date" className="field w-full" value={filters.dateFrom} onChange={(e)=>setFilters({...filters,dateFrom:e.target.value})}/></div>
+          <div><label className="label">Data final</label><input type="date" className="field w-full" value={filters.dateTo} onChange={(e)=>setFilters({...filters,dateTo:e.target.value})}/></div>
+          <div><label className="label">Crédito mínimo</label><input type="number" className="field w-full" value={filters.minCredit} onChange={(e)=>setFilters({...filters,minCredit:e.target.value})} placeholder="Ex.: 50000"/></div>
+          <div><label className="label">Crédito máximo</label><input type="number" className="field w-full" value={filters.maxCredit} onChange={(e)=>setFilters({...filters,maxCredit:e.target.value})} placeholder="Ex.: 200000"/></div>
+        </div>
+
+        <div className="border-t border-gray-200 pt-4">
+          <div className="flex items-center gap-2 mb-3"><SlidersHorizontal size={15}/><h4 className="font-semibold text-sm">Informações visíveis na lista</h4></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {Object.entries({
+              group:"Grupo", quota:"Cota", client:"Cliente", bank:"Banco / Administradora",
+              credit:"Crédito", installments:"Parcelas", progress:"Progresso", startDate:"Data de início",
+              seller:"Vendedor", status:"Status"
+            }).map(([key,label])=><label key={key} className="flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-3 py-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={visible[key]} onChange={(e)=>setVisible((old)=>({...old,[key]:e.target.checked}))}/>
+              <span>{label}</span>
+            </label>)}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button onClick={()=>setVisible(Object.fromEntries(Object.keys(visible).map((k)=>[k,true])))} className="text-xs border border-gray-200 bg-white rounded-lg px-3 py-1.5">Mostrar tudo</button>
+            <button onClick={()=>setVisible({...visible,credit:false,installments:false,progress:false,startDate:false})} className="text-xs border border-gray-200 bg-white rounded-lg px-3 py-1.5">Visualização compacta</button>
+          </div>
+        </div>
+      </div>}
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-400">{filtered.length} cota(s) encontrada(s)</p>
+        {(filters.status!=="Todos"||filters.bank!=="Todos"||filters.seller!=="Todos"||filters.dateFrom||filters.dateTo||filters.minCredit||filters.maxCredit||filters.minProgress)&&<span className="text-xs font-medium text-ink">Filtros ativos</span>}
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="data-table min-w-[1180px]">
+        <table className="data-table min-w-[980px]">
           <thead><tr>
-            {th("group","Grupo")}
-            {th("quota","Cota")}
-            {th("client","Cliente")}
-            {th("bank","Banco")}
-            {th("credit","Crédito")}
-            {th("installmentsPaid","Parcelas")}
-            {th("paidPercent","Progresso")}
-            {th("seller","Vendedor")}
-            {th("status","Status")}
+            {visible.group&&th("group","Grupo")}
+            {visible.quota&&th("quota","Cota")}
+            {visible.client&&th("client","Cliente")}
+            {visible.bank&&th("bank","Banco")}
+            {visible.credit&&th("credit","Crédito")}
+            {visible.installments&&th("installmentsPaid","Parcelas")}
+            {visible.progress&&th("paidPercent","Progresso")}
+            {visible.startDate&&th("startDate","Data")}
+            {visible.seller&&th("seller","Vendedor")}
+            {visible.status&&th("status","Status")}
             <th>Ações</th>
           </tr></thead>
           <tbody>{filtered.map((q)=><tr key={q.id} onClick={()=>setSelected(q)} className="cursor-pointer">
-            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.group}</b><small>{q.id}</small></button></td>
-            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.quota}</b><small>início {q.startDate}</small></button></td>
-            <td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4">{q.client}</button></td>
-            <td>{q.bank}</td>
-            <td>{money(q.credit)}</td>
-            <td>{q.installmentsPaid}/{q.installmentsTotal}</td>
-            <td><div className="w-32 bg-gray-100 h-2 rounded-full"><div className="h-2 bg-ink rounded-full" style={{width:`${Math.min(q.paidPercent,100)}%`}}/></div><small>{q.paidPercent.toFixed(1)}%</small></td>
-            <td>{q.seller}</td>
-            <td><span className="pill">{q.status}</span></td>
+            {visible.group&&<td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.group}</b><small>{q.id}</small></button></td>}
+            {visible.quota&&<td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4"><b>{q.quota}</b></button></td>}
+            {visible.client&&<td><button onClick={(e)=>{e.stopPropagation();setSelected(q)}} className="text-left hover:underline underline-offset-4 font-medium text-ink">{q.client}</button></td>}
+            {visible.bank&&<td>{q.bank}</td>}
+            {visible.credit&&<td>{money(q.credit)}</td>}
+            {visible.installments&&<td>{q.installmentsPaid}/{q.installmentsTotal}</td>}
+            {visible.progress&&<td><div className="w-28 bg-gray-100 h-2 rounded-full"><div className="h-2 bg-ink rounded-full" style={{width:`${Math.min(q.paidPercent,100)}%`}}/></div><small>{q.paidPercent.toFixed(1)}%</small></td>}
+            {visible.startDate&&<td>{q.startDate}</td>}
+            {visible.seller&&<td>{q.seller}</td>}
+            {visible.status&&<td><span className="pill">{q.status}</span></td>}
             <td><button onClick={(e)=>{e.stopPropagation();setEdit({...q})}} className="btn-secondary py-1.5 px-2.5"><Edit3 size={13}/>Editar</button></td>
           </tr>)}</tbody>
         </table>
       </div>
-      {!filtered.length&&<div className="py-10 text-center text-sm text-gray-400">Nenhuma cota encontrada.</div>}
+      {!filtered.length&&<div className="py-10 text-center text-sm text-gray-400">Nenhuma cota encontrada com esses filtros.</div>}
     </div>
 
     {selected&&<Modal title={`Cota ${selected.quota}`} onClose={()=>setSelected(null)}>
@@ -182,7 +269,7 @@ function QuotasPage(){
         <div className="panel p-3"><p className="text-xs text-gray-400">Crédito</p><b>{money(selected.credit)}</b></div>
         <div className="panel p-3"><p className="text-xs text-gray-400">Parcelas pagas</p><b>{selected.installmentsPaid} de {selected.installmentsTotal}</b></div>
         <div className="panel p-3"><p className="text-xs text-gray-400">Progresso</p><b>{selected.paidPercent.toFixed(1)}%</b></div>
-        <div className="panel p-3"><p className="text-xs text-gray-400">Início</p><b>{selected.startDate}</b></div>
+        <div className="panel p-3"><p className="text-xs text-gray-400">Data de início</p><b>{selected.startDate}</b></div>
         <div className="panel p-3 md:col-span-2"><p className="text-xs text-gray-400">Responsável / vendedor</p><b>{selected.seller}</b></div>
         <div className="panel p-3"><p className="text-xs text-gray-400">Registro</p><b>{selected.id}</b></div>
       </div>
@@ -198,7 +285,10 @@ function QuotasPage(){
         <div><label className="label">Grupo</label><input className="field w-full" value={edit.group} onChange={(e)=>setEdit({...edit,group:e.target.value})}/></div>
         <div><label className="label">Número da cota</label><input className="field w-full" value={edit.quota} onChange={(e)=>setEdit({...edit,quota:e.target.value})}/></div>
         <div><label className="label">Status</label><select className="field w-full" value={edit.status} onChange={(e)=>setEdit({...edit,status:e.target.value as Quota["status"]})}>{["Ativa","Contemplada","Encerrada","Em atraso"].map((x)=><option key={x}>{x}</option>)}</select></div>
-        <div className="grid grid-cols-2 gap-3"><div><label className="label">Parcelas pagas</label><input type="number" className="field w-full" value={edit.installmentsPaid} onChange={(e)=>setEdit({...edit,installmentsPaid:Number(e.target.value),paidPercent:Math.min(100,Number(e.target.value)/Math.max(edit.installmentsTotal,1)*100)})}/></div><div><label className="label">Total parcelas</label><input type="number" className="field w-full" value={edit.installmentsTotal} onChange={(e)=>setEdit({...edit,installmentsTotal:Number(e.target.value),paidPercent:Math.min(100,edit.installmentsPaid/Math.max(Number(e.target.value),1)*100)})}/></div></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="label">Parcelas pagas</label><input type="number" className="field w-full" value={edit.installmentsPaid} onChange={(e)=>setEdit({...edit,installmentsPaid:Number(e.target.value),paidPercent:Math.min(100,Number(e.target.value)/Math.max(edit.installmentsTotal,1)*100)})}/></div>
+          <div><label className="label">Total parcelas</label><input type="number" className="field w-full" value={edit.installmentsTotal} onChange={(e)=>setEdit({...edit,installmentsTotal:Number(e.target.value),paidPercent:Math.min(100,edit.installmentsPaid/Math.max(Number(e.target.value),1)*100)})}/></div>
+        </div>
         <div><label className="label">Valor do crédito</label><input type="number" className="field w-full" value={edit.credit} onChange={(e)=>setEdit({...edit,credit:Number(e.target.value)})}/></div>
         <button onClick={save} className="btn-primary w-full justify-center">Salvar alterações</button>
       </div>
