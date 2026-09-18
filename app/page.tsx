@@ -124,7 +124,7 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500">Aqui está o resumo completo do seu CRM de consórcios.</p>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-400">
                 <span className="w-2 h-2 rounded-full bg-green-500"/>
-                Dados demonstrativos · novos valores somente ao entrar ou recarregar
+                Atualizações automáticas · novos valores somente ao entrar ou recarregar
               </span>
             </div>
           </div>
