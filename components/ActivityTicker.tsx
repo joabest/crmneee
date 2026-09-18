@@ -40,9 +40,9 @@ export default function ActivityTicker() {
 
   return (
     <div className="relative z-20 border-b border-white/10 bg-black text-white">
-      <div className="mx-auto flex min-h-[36px] max-w-[1800px] items-center gap-3 overflow-hidden px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-[36px] w-full items-center gap-3 overflow-hidden px-4 sm:px-6 lg:px-8">
         <span className="hidden shrink-0 rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[9px] font-bold tracking-[0.16em] text-white/70 sm:inline-flex">
-          DADOS DEMONSTRATIVOS
+          ATUALIZAÇÕES AUTOMÁTICAS
         </span>
 
         <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
