@@ -17,12 +17,18 @@ import { BankData, Client, EmailThread, Purchase, Quota, Seller, ServiceTicket }
 
 const ReportsCharts=dynamic(()=>import("@/components/ReportsCharts"),{ssr:false,loading:()=> <div className="panel h-[360px] animate-pulse bg-white"/>});
 const money=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const numberBR=(n:number)=>n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fileDate=()=>new Intl.DateTimeFormat("pt-BR").format(new Date()).replace(/\//g,".");
+const datedFilename=(filename:string)=>{
+  const dot=filename.lastIndexOf(".");
+  return dot>0?`${filename.slice(0,dot)}_${fileDate()}${filename.slice(dot)}`:`${filename}_${fileDate()}`;
+};
 
 function downloadCsv(filename:string,rows:(string|number)[][]){
   const csv=rows.map((r)=>r.map((v)=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
   const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+  const a=document.createElement("a");a.href=url;a.download=datedFilename(filename);a.click();URL.revokeObjectURL(url);
 }
 function PageHeader({title,subtitle,action}:{title:string;subtitle:string;action?:React.ReactNode}){
   return <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1><p className="text-sm text-gray-500 mt-1">{subtitle}</p></div>{action}</div>;
@@ -61,7 +67,7 @@ function ClientsPage(){
     const defs:[keyof Client,string][]=[["id","ID"],["name","Nome"],["cpf","CPF"],["phone","Telefone"],["email","E-mail"],["city","Cidade"],["source","Origem"],["owner","Responsável"],["status","Status"],["totalCredit","Crédito"]];
     const chosen=defs.filter(([k])=>exportFields[k]);
     const selectedRows=filtered.filter((c)=>exportIds.has(c.id));
-    downloadCsv("clientes-mv-crm.csv",[chosen.map(([,label])=>label),...selectedRows.map((c)=>chosen.map(([k])=>k==="totalCredit"?money(Number(c[k])):String(c[k])))]);
+    downloadCsv("relatorio_clientes.csv",[chosen.map(([,label])=>label),...selectedRows.map((c)=>chosen.map(([k])=>k==="totalCredit"?numberBR(Number(c[k])):String(c[k])))]);
     setExportOpen(false);
   };
   const phoneDigits=(p:string)=>p.replace(/\D/g,"");
@@ -162,9 +168,9 @@ function QuotasPage(){
     </th>
   );
 
-  const exportRows=()=>downloadCsv("cotas-mv-crm.csv",[
+  const exportRows=()=>downloadCsv("relatorio_cotas.csv",[
     ["Grupo","Cota","Cliente","Banco","Crédito","Parcelas pagas","Total parcelas","Progresso","Data início","Vendedor","Status"],
-    ...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,q.credit,q.installmentsPaid,q.installmentsTotal,q.paidPercent+"%",q.startDate,q.seller,q.status])
+    ...filtered.map((q)=>[q.group,q.quota,q.client,q.bank,numberBR(q.credit),q.installmentsPaid,q.installmentsTotal,q.paidPercent+"%",q.startDate,q.seller,q.status])
   ]);
 
   return <>
@@ -430,7 +436,7 @@ function SellersPage(){
   const rows=topSellers.filter((s)=>s.name.toLowerCase().includes(query.toLowerCase())).slice().sort((a,b)=>sort==="Vendas"?b.sales-a.sales:sort==="Propostas"?b.proposals-a.proposals:parseFloat(b.conversion)-parseFloat(a.conversion));
   const history=selected?proposals.filter((p)=>p.seller===selected.name):[];
   const sellerPurchases=selected?purchases.filter((p)=>p.seller===selected.name):[];
-  const exportSeller=(s:Seller)=>downloadCsv(`vendedor-${s.name.toLowerCase().replace(/\s+/g,"-")}.csv`,[["Nome","Cargo","Hierarquia","E-mail","Telefone","Data de pagamento","Salário","Status pagamento","Propostas","Vendas","Conversão","Valor vendido"],[s.name,s.role,s.hierarchy,s.email,s.phone,s.payDay,s.salary,s.paymentStatus,s.proposals,s.sales,s.conversion,s.value],[],["Propostas"],["Nº","Cliente","Banco","Crédito","Status"],...history.map((p)=>[p.id,p.client,p.bank,p.creditValue,p.status])]);
+  const exportSeller=(s:Seller)=>downloadCsv(`relatorio_vendedor_${s.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"_")}.csv`,[["Nome","Cargo","Hierarquia","E-mail","Telefone","Data de pagamento","Salário","Status pagamento","Propostas","Vendas","Conversão","Valor vendido"],[s.name,s.role,s.hierarchy,s.email,s.phone,s.payDay,numberBR(s.salary),s.paymentStatus,s.proposals,s.sales,s.conversion,s.value],[],["Propostas"],["Nº","Cliente","Banco","Crédito","Status"],...history.map((p)=>[p.id,p.client,p.bank,p.creditValue,p.status])]);
   return <>
     <PageHeader title="Vendedores" subtitle="Clique em um vendedor para ver dados completos, histórico e exportar."/>
     <div className="panel toolbar"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar vendedor..."/></div><select className="field w-full sm:w-auto" value={sort} onChange={(e)=>setSort(e.target.value)}><option>Vendas</option><option>Propostas</option><option>Conversão</option></select></div>
@@ -455,7 +461,7 @@ function PurchasesPage(){
   const [query,setQuery]=useState(""); const [status,setStatus]=useState("Todos"); const [selected,setSelected]=useState<Purchase|null>(null);
   const rows=purchases.filter((p)=>(!query||[p.client,p.product,p.bank,p.seller].join(" ").toLowerCase().includes(query.toLowerCase()))&&(status==="Todos"||p.status===status));
   return <>
-    <PageHeader title="Compras" subtitle="Histórico simulado de cartas e operações. Clique em uma linha para abrir os detalhes." action={<button onClick={()=>downloadCsv("compras.csv",[["ID","Cliente","Produto","Banco","Valor","Vendedor","Data","Status","Pagamento"],...rows.map((p)=>[p.id,p.client,p.product,p.bank,p.value,p.seller,p.date,p.status,p.payment])])} className="btn-secondary"><Download size={15}/>Exportar</button>}/>
+    <PageHeader title="Compras" subtitle="Histórico simulado de cartas e operações. Clique em uma linha para abrir os detalhes." action={<button onClick={()=>downloadCsv("relatorio_compras.csv",[["ID","Cliente","Produto","Banco","Valor","Vendedor","Data","Status","Pagamento"],...rows.map((p)=>[p.id,p.client,p.product,p.bank,numberBR(p.value),p.seller,p.date,p.status,p.payment])])} className="btn-secondary"><Download size={15}/>Exportar</button>}/>
     <div className="panel"><div className="toolbar mb-4"><div className="searchbox"><Search size={16}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar compra..."/></div><select className="field w-full sm:w-auto" value={status} onChange={(e)=>setStatus(e.target.value)}><option>Todos</option><option>Confirmada</option><option>Pendente</option><option>Cancelada</option></select></div><div className="overflow-x-auto"><table className="data-table min-w-[900px]"><thead><tr><th>ID</th><th>Cliente</th><th>Produto</th><th>Banco</th><th>Valor</th><th>Vendedor</th><th>Data</th><th>Status</th><th>Pagamento</th></tr></thead><tbody>{rows.map((p)=><tr key={p.id} onClick={()=>setSelected(p)} className="cursor-pointer"><td>{p.id}</td><td><b>{p.client}</b></td><td>{p.product}</td><td>{p.bank}</td><td>{money(p.value)}</td><td>{p.seller}</td><td>{p.date}</td><td><span className="pill">{p.status}</span></td><td>{p.payment}</td></tr>)}</tbody></table></div></div>
     {selected&&<Modal title={`Compra ${selected.id}`} onClose={()=>setSelected(null)} max="max-w-lg"><div className="grid sm:grid-cols-2 gap-3"><div className="panel p-3"><p className="text-xs text-gray-400">Cliente</p><b>{selected.client}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Produto</p><b>{selected.product}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Banco</p><b>{selected.bank}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Valor</p><b>{money(selected.value)}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Vendedor</p><b>{selected.seller}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Pagamento</p><b>{selected.payment}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Status</p><b>{selected.status}</b></div><div className="panel p-3"><p className="text-xs text-gray-400">Data</p><b>{selected.date}</b></div></div></Modal>}
   </>;
@@ -554,7 +560,7 @@ function ReportsPage(){
     {month:"Out-Dez",propostas:performanceData.slice(9,12).reduce((a,b)=>a+b.propostas,0),vendas:performanceData.slice(9,12).reduce((a,b)=>a+b.vendas,0)},
   ];
   return <>
-    <PageHeader title="Relatórios" subtitle="Indicadores consolidados com gráficos de evolução e performance por banco." action={<button onClick={()=>downloadCsv("relatorio-performance.csv",[["Período","Propostas","Vendas"],...chartData.map((p)=>[p.month,p.propostas,p.vendas])])} className="btn-secondary"><Download size={15}/>Exportar CSV</button>}/>
+    <PageHeader title="Relatórios" subtitle="Indicadores consolidados com gráficos de evolução e performance por banco." action={<button onClick={()=>downloadCsv("relatorio_desempenho.csv",[["Período","Propostas","Vendas"],...chartData.map((p)=>[p.month,p.propostas,p.vendas])])} className="btn-secondary"><Download size={15}/>Exportar CSV</button>}/>
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[["Propostas","1.326"],["Vendas","298"],["Conversão","22,5%"],["Receita estimada","R$ 3,4 mi"]].map(([a,b])=><div className="panel" key={a}><p className="text-xs text-gray-400">{a}</p><p className="text-2xl font-bold mt-2">{b}</p></div>)}</div>
     <div className="flex justify-end"><select className="field" value={view} onChange={(e)=>setView(e.target.value as "Mensal"|"Trimestral")}><option>Mensal</option><option>Trimestral</option></select></div>
     <ReportsCharts performance={chartData} banks={banks}/>
