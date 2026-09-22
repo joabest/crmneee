@@ -130,7 +130,7 @@ export default function InternalMessages() {
               </div>
               <div className="flex justify-end">
                 <div className="max-w-[88%] sm:max-w-[72%] bg-ink text-white rounded-2xl rounded-br-md px-4 py-3">
-                  <p className="text-[10px] font-semibold text-gray-300 mb-1">Daniel Vorcaro</p>
+                  <p className="text-[10px] font-semibold text-gray-300 mb-1">Margareth Souza</p>
                   <p className="text-sm leading-6">Recebi. Vou verificar isso agora e te retorno por aqui.</p>
                   <p className="text-[10px] text-gray-400 text-right mt-2">Pouco depois</p>
                 </div>
