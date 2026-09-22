@@ -21,10 +21,8 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
       const saved=localStorage.getItem("mvcrm-profile");
       if(saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.name === "Daniel Vorcaro" || parsed?.email === "daniel@mvcrm.com.br") {
-          parsed.name = "Margareth Souza";
-          parsed.email = "margareth@mvcrm.com.br";
-        }
+        parsed.name = "Margareth Souza";
+        parsed.email = "margareth@mvcrm.com.br";
         setProfile(parsed);
       }
     } catch {}
