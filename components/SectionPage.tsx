@@ -489,9 +489,9 @@ function MessagesPage(){
     const person=t.from.replace("Você → ","");
     const isSent=t.from.startsWith("Você → ");
     const base=[
-      {id:"a",who:isSent?"me":"them",name:isSent?"Daniel Vorcaro":person,text:t.body,time:t.time},
-      {id:"b",who:isSent?"them":"me",name:isSent?person:"Daniel Vorcaro",text:isSent?"Recebido. Vou verificar e retorno por aqui.":"Recebi. Vou verificar isso agora e te retorno por aqui.",time:"Pouco depois"},
-      {id:"c",who:isSent?"me":"them",name:isSent?"Daniel Vorcaro":person,text:isSent?"Perfeito. Se precisar de mais alguma informação, me avise.":"Perfeito, obrigado. Fico no aguardo e atualizo o CRM assim que tiver retorno.",time:"Agora"}
+      {id:"a",who:isSent?"me":"them",name:isSent?"Margareth Souza":person,text:t.body,time:t.time},
+      {id:"b",who:isSent?"them":"me",name:isSent?person:"Margareth Souza",text:isSent?"Recebido. Vou verificar e retorno por aqui.":"Recebi. Vou verificar isso agora e te retorno por aqui.",time:"Pouco depois"},
+      {id:"c",who:isSent?"me":"them",name:isSent?"Margareth Souza":person,text:isSent?"Perfeito. Se precisar de mais alguma informação, me avise.":"Perfeito, obrigado. Fico no aguardo e atualizo o CRM assim que tiver retorno.",time:"Agora"}
     ];
     return base;
   };
