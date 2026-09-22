@@ -27,7 +27,9 @@ const revenues:Revenue[]=[
 
 const money=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
 
-const fileDate=()=>new Intl.DateTimeFormat("pt-BR").format(new Date()).replace(/\\//g,".");\n\nfunction exportPdf(expenses:Expense[],payrollTotal:number,revenueTotal:number){
+const fileDate=()=>new Intl.DateTimeFormat("pt-BR").format(new Date()).replace(/\//g,".");
+
+function exportPdf(expenses:Expense[],payrollTotal:number,revenueTotal:number){
   const total=expenses.reduce((a,b)=>a+b.value,0);
   const rows=expenses.map((e)=>`<tr><td>${e.id}</td><td>${e.description}</td><td>${e.category}</td><td>${e.date}</td><td>${e.status}</td><td style="text-align:right">${money(e.value)}</td></tr>`).join("");
   const popup=window.open("","_blank","width=1000,height=760");
