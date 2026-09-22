@@ -100,7 +100,7 @@ export default function TopSellersList({ refreshKey = 0 }: { refreshKey?: number
 
         <div className="space-y-1">
           {rows.map((row:any) => (
-            <button key={row.key} onClick={()=>setSelected(row)} className="w-full flex items-center gap-3 py-2 rounded-lg hover:bg-gray-50 px-1 transition-colors text-left">
+            <button key={row.key} onClick={()=>setSelected(row)} className="w-full grid grid-cols-[24px_36px_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 py-2 rounded-lg hover:bg-gray-50 px-1 transition-colors text-left">
               <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${badgeColors[row.position] ?? "bg-gray-100 text-gray-500"}`}>{row.position}</span>
               {row.avatar ? (
                 <img src={row.avatar} alt={row.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -110,11 +110,11 @@ export default function TopSellersList({ refreshKey = 0 }: { refreshKey?: number
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ink truncate">{row.name}</p>
-                <p className="text-xs text-gray-500 truncate">{row.sub}</p>
+                <p className="text-sm font-semibold text-ink leading-tight break-words">{row.name}</p>
+                <p className="text-xs text-gray-500 leading-tight mt-0.5 break-words">{row.sub}</p>
               </div>
-              <div className="text-right shrink-0 max-w-[112px]">
-                <p className="text-sm font-semibold text-ink truncate">{row.displayValue ?? row.value}</p>
+              <div className="text-right min-w-max">
+                <p className="text-sm font-semibold text-ink whitespace-nowrap">{row.displayValue ?? row.value}</p>
                 <p className={`text-[11px] font-medium flex items-center justify-end gap-0.5 ${mode==="Top Vendedores"?"text-positive":"text-gray-400"}`}>
                   {mode==="Top Vendedores"&&<ArrowUp size={10}/>} {row.growth}
                 </p>
