@@ -12,14 +12,21 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
   const [notifications, setNotifications] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
-  const [profile, setProfile] = useState<Profile>({name:"Margareth Souza",role:"Administrador",email:"daniel@mvcrm.com.br"});
+  const [profile, setProfile] = useState<Profile>({name:"Margareth Souza",role:"Administrador",email:"margareth@mvcrm.com.br"});
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     try {
       const saved=localStorage.getItem("mvcrm-profile");
-      if(saved) {\n        const parsed = JSON.parse(saved);\n        if (parsed?.name === "Daniel Vorcaro") parsed.name = "Margareth Souza";\n        setProfile(parsed);\n      }
+      if(saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.name === "Daniel Vorcaro" || parsed?.email === "daniel@mvcrm.com.br") {
+          parsed.name = "Margareth Souza";
+          parsed.email = "margareth@mvcrm.com.br";
+        }
+        setProfile(parsed);
+      }
     } catch {}
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -104,7 +111,7 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
 
           <div className="relative">
             <button onClick={()=>{setProfileOpen((v)=>!v);setNotifications(false)}} className="flex items-center gap-3 rounded-xl hover:bg-white/80 p-1.5 -m-1.5 text-left">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Daniel_Vorcaro_-_2024_%28cropped%29.jpg" alt="Foto do administrador" loading="eager" className="w-10 h-10 rounded-full object-cover object-top border border-gray-200" />
+              <img src="/margareth-avatar.svg" alt="Margareth Souza" loading="eager" className="w-10 h-10 rounded-full object-cover object-center border border-gray-200" />
               <div className="leading-tight hidden md:block">
                 <p className="text-sm font-semibold text-ink">{profile.name}</p>
                 <p className="text-xs text-gray-500">{profile.role} • MV CRM</p>
