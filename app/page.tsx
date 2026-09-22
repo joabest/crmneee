@@ -120,7 +120,7 @@ export default function DashboardPage() {
       <main className="px-4 sm:px-6 lg:px-8 pb-10 pt-5 space-y-5 max-w-[1800px] mx-auto">
         <div className="flex items-start lg:items-center justify-between flex-col lg:flex-row gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">Bem-vindo de volta, Daniel Vorcaro!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">Bem-vinda de volta, Margareth Souza!</h1>
             <div className="flex items-center gap-2 flex-wrap mt-1">
               <p className="text-sm text-gray-500">Aqui está o resumo completo do seu CRM de consórcios.</p>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-400">
