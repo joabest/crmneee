@@ -168,8 +168,8 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.55fr_0.9fr_0.9fr] gap-5 items-stretch">
-          <PerformanceChart data={chartData} period={`${period}D`}/>
+        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-[1.55fr_0.9fr_0.9fr] gap-5 items-stretch">
+          <div className="xl:col-span-2 2xl:col-span-1 min-w-0">\n            <PerformanceChart data={chartData} period={`${period}D`}/>\n          </div>
           <TopSellersList refreshKey={seed+period}/>
           <InternalMessages />
         </div>
