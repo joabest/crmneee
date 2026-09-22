@@ -109,7 +109,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href=url;
-    a.download=`visao-geral-mv-crm-${period}d.csv`;
+    const dataArquivo=new Intl.DateTimeFormat("pt-BR").format(new Date()).replace(/\\//g,".");\n    a.download=`relatorio_visao_geral_${period}d_${dataArquivo}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
