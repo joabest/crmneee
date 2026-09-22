@@ -18,15 +18,23 @@ const columnDefs = [
   ["seller", "Vendedor"], ["status", "Status"], ["date", "Data"],
 ] as const;
 
+const fileDate=()=>new Intl.DateTimeFormat("pt-BR").format(new Date()).replace(/\//g,".");
+const moneyTextBR=(value:string|number)=>{
+  if(typeof value==="number") return value.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const raw=String(value).replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".");
+  const parsed=Number(raw);
+  return Number.isFinite(parsed)?parsed.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):String(value);
+};
+
 function exportCsv(rows: Proposal[]) {
   const header = ["Nº","Cliente","Banco","Valor do Crédito","Prazo","Vendedor","Status","Data"];
-  const csv = [header, ...rows.map((p) => [p.id,p.client,p.bank,p.creditValue,p.term,p.seller,p.status,p.date])]
+  const csv = [header, ...rows.map((p) => [p.id,p.client,p.bank,moneyTextBR(p.creditValue),p.term,p.seller,p.status,p.date])]
     .map((r) => r.map((v) => `"${String(v).replace(/"/g,'""')}"`).join(";"))
     .join("\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = "propostas-mv-crm.csv"; a.click();
+  a.href = url; a.download = `relatorio_propostas_${fileDate()}.csv`; a.click();
   URL.revokeObjectURL(url);
 }
 
