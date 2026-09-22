@@ -12,14 +12,14 @@ export default function Header({ onMenu }: { onMenu?: () => void }) {
   const [notifications, setNotifications] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
-  const [profile, setProfile] = useState<Profile>({name:"Daniel Vorcaro",role:"Administrador",email:"daniel@mvcrm.com.br"});
+  const [profile, setProfile] = useState<Profile>({name:"Margareth Souza",role:"Administrador",email:"daniel@mvcrm.com.br"});
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     try {
       const saved=localStorage.getItem("mvcrm-profile");
-      if(saved) setProfile(JSON.parse(saved));
+      if(saved) {\n        const parsed = JSON.parse(saved);\n        if (parsed?.name === "Daniel Vorcaro") parsed.name = "Margareth Souza";\n        setProfile(parsed);\n      }
     } catch {}
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
